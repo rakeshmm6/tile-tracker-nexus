@@ -17,12 +17,13 @@ import {
   Dialog, 
   DialogContent, 
   DialogHeader, 
-  DialogTitle
+  DialogTitle,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/sonner";
 import { Order } from "@/lib/types";
-import { getOrdersWithItems, getInventory } from "@/lib/database";
-import { formatDate, formatCurrency } from "@/lib/utils";
+import { getOrdersWithItems, getInventory, addOrder } from "@/lib/database";
+import { formatDate, formatCurrency, generateOrderNumber } from "@/lib/utils";
 import OrderForm from "@/components/OrderForm";
 
 const Orders = () => {
@@ -59,11 +60,35 @@ const Orders = () => {
 
   const handleCreateOrder = async (orderData: Order, orderItems: any[]) => {
     try {
-      // In a real application, we'd make an API call here
-      // For now, we'll just simulate it with a toast and reload
+      // Generate an order ID if not provided
+      if (!orderData.order_id) {
+        orderData.order_id = generateOrderNumber();
+      }
+      
+      // Call the addOrder function from database.ts
+      const newOrder = await addOrder(orderData, orderItems);
+
+      // Update the orders list immediately without refetching everything
+      const updatedOrder = {
+        ...newOrder,
+        items: orderItems,
+        total_amount: orderItems.reduce((total, item) => {
+          const inventoryItem = inventory.find(inv => inv.product_id === item.product_id);
+          if (inventoryItem) {
+            const sqftPerBox = (inventoryItem.tile_width * inventoryItem.tile_height * 
+                               inventoryItem.tiles_per_box) / (304.8 * 304.8);
+            return total + (sqftPerBox * item.boxes_sold * item.price_per_sqft);
+          }
+          return total;
+        }, 0)
+      };
+      
+      setOrders(prevOrders => [updatedOrder, ...prevOrders]);
       toast.success("Order created successfully");
       setIsFormDialogOpen(false);
-      fetchData();
+      
+      // Refetch inventory as it has been updated
+      getInventory().then(data => setInventory(data));
     } catch (error) {
       console.error("Error creating order:", error);
       toast.error("Failed to create order");
@@ -115,6 +140,9 @@ const Orders = () => {
           <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Order</DialogTitle>
+              <DialogDescription>
+                Fill in the details to create a new customer order
+              </DialogDescription>
             </DialogHeader>
             <OrderForm 
               inventory={inventory}
