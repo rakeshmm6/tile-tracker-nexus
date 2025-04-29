@@ -19,7 +19,8 @@ import {
   Dialog, 
   DialogContent, 
   DialogHeader, 
-  DialogTitle 
+  DialogTitle,
+  DialogTrigger
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -33,12 +34,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/components/ui/sonner";
 import OrderForm from "@/components/OrderForm";
-import { getOrdersWithItems, deleteOrder, addOrder } from "@/lib/database";
-import { Order, OrderItem } from "@/lib/types";
+import { getOrdersWithItems, deleteOrder, addOrder, getInventory } from "@/lib/database";
+import { Order, OrderItem, InventoryItem } from "@/lib/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 const Orders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -53,17 +55,21 @@ const Orders = () => {
   const itemsPerPage = 10;
 
   useEffect(() => {
-    fetchOrders();
+    fetchData();
   }, []);
 
-  const fetchOrders = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const data = await getOrdersWithItems();
-      setOrders(data);
+      const [ordersData, inventoryData] = await Promise.all([
+        getOrdersWithItems(),
+        getInventory()
+      ]);
+      setOrders(ordersData);
+      setInventory(inventoryData);
     } catch (error) {
-      console.error("Error fetching orders:", error);
-      toast.error("Failed to load order data");
+      console.error("Error fetching data:", error);
+      toast.error("Failed to load data");
     } finally {
       setLoading(false);
     }
@@ -89,6 +95,9 @@ const Orders = () => {
       
       setOrders(prev => [enhancedOrder, ...prev]);
       setIsDialogOpen(false);
+      
+      // Update inventory data
+      await fetchData();
     } catch (error) {
       console.error("Error adding order:", error);
       toast.error("Failed to create order");
@@ -102,6 +111,9 @@ const Orders = () => {
       await deleteOrder(orderToDelete);
       toast.success("Order deleted successfully");
       setOrders(prev => prev.filter(order => order.order_id !== orderToDelete));
+      
+      // Update inventory data after deleting an order
+      await fetchData();
     } catch (error) {
       console.error("Error deleting order:", error);
       toast.error("Failed to delete order");
@@ -171,7 +183,11 @@ const Orders = () => {
             <DialogHeader>
               <DialogTitle>Create New Order</DialogTitle>
             </DialogHeader>
-            <OrderForm onSubmit={handleAddOrder} onCancel={() => setIsDialogOpen(false)} />
+            <OrderForm 
+              inventory={inventory} 
+              onSubmit={handleAddOrder} 
+              onCancel={() => setIsDialogOpen(false)} 
+            />
           </DialogContent>
         </Dialog>
       </PageHeader>
@@ -256,12 +272,13 @@ const Orders = () => {
                     <td className="px-6 py-4">
                       <div className="flex space-x-2">
                         <Button
-                          as={Link}
-                          to={`/orders/${order.order_id}`}
                           size="sm"
                           variant="ghost"
+                          asChild
                         >
-                          <FileText className="h-4 w-4" />
+                          <Link to={`/orders/${order.order_id}`}>
+                            <FileText className="h-4 w-4" />
+                          </Link>
                         </Button>
                         {isAdmin() && (
                           <Button
