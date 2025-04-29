@@ -40,6 +40,7 @@ import {
 } from "@/lib/database";
 import { InventoryItem } from "@/lib/types";
 import { calculateSquareFeet, formatCurrency } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Inventory = () => {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
@@ -49,6 +50,7 @@ const Inventory = () => {
   const [itemToDelete, setItemToDelete] = useState<number | null>(null);
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const { isAdmin } = useAuth();
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -151,26 +153,28 @@ const Inventory = () => {
         title="Inventory Management" 
         description="Manage your tile inventory"
       >
-        <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" /> Add New Item
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[550px]">
-            <DialogHeader>
-              <DialogTitle>{editingItem ? "Edit Item" : "Add New Item"}</DialogTitle>
-            </DialogHeader>
-            <InventoryForm
-              initialData={editingItem || undefined}
-              onSubmit={editingItem ? handleEditItem : handleAddItem}
-              onCancel={() => {
-                setIsFormDialogOpen(false);
-                setEditingItem(null);
-              }}
-            />
-          </DialogContent>
-        </Dialog>
+        {isAdmin() && (
+          <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" /> Add New Item
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[550px]">
+              <DialogHeader>
+                <DialogTitle>{editingItem ? "Edit Item" : "Add New Item"}</DialogTitle>
+              </DialogHeader>
+              <InventoryForm
+                initialData={editingItem || undefined}
+                onSubmit={editingItem ? handleEditItem : handleAddItem}
+                onCancel={() => {
+                  setIsFormDialogOpen(false);
+                  setEditingItem(null);
+                }}
+              />
+            </DialogContent>
+          </Dialog>
+        )}
       </PageHeader>
 
       <div className="bg-white shadow-sm rounded-lg border overflow-hidden">
@@ -201,19 +205,19 @@ const Inventory = () => {
                 <th scope="col" className="px-6 py-3">Price/Sqft</th>
                 <th scope="col" className="px-6 py-3">Boxes In Stock</th>
                 <th scope="col" className="px-6 py-3">Value</th>
-                <th scope="col" className="px-6 py-3">Actions</th>
+                {isAdmin() && <th scope="col" className="px-6 py-3">Actions</th>}
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-4 text-center">
+                  <td colSpan={isAdmin() ? 9 : 8} className="px-6 py-4 text-center">
                     Loading inventory data...
                   </td>
                 </tr>
               ) : currentItems.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-4 text-center">
+                  <td colSpan={isAdmin() ? 9 : 8} className="px-6 py-4 text-center">
                     {searchQuery ? "No matching products found" : "No products found. Add some!"}
                   </td>
                 </tr>
@@ -236,25 +240,27 @@ const Inventory = () => {
                       <td className="px-6 py-4">₹{item.price_per_sqft}</td>
                       <td className="px-6 py-4">{item.boxes_on_hand}</td>
                       <td className="px-6 py-4">{formatCurrency(totalValue)}</td>
-                      <td className="px-6 py-4">
-                        <div className="flex space-x-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => openEditDialog(item)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => confirmDelete(item.product_id!)}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
+                      {isAdmin() && (
+                        <td className="px-6 py-4">
+                          <div className="flex space-x-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => openEditDialog(item)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => confirmDelete(item.product_id!)}
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })

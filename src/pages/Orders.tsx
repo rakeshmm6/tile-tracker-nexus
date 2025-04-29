@@ -3,13 +3,14 @@ import React, { useEffect, useState } from "react";
 import { 
   Plus, 
   Search, 
-  FileText,
-  Download,
+  FileText, 
+  Trash2,
+  ArrowUpDown,
   ChevronLeft,
-  ChevronRight,
-  Trash
+  ChevronRight
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/Layout";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -18,8 +19,7 @@ import {
   Dialog, 
   DialogContent, 
   DialogHeader, 
-  DialogTitle,
-  DialogDescription
+  DialogTitle 
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -32,173 +32,153 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/components/ui/sonner";
-import { Order } from "@/lib/types";
-import { getOrdersWithItems, getInventory, addOrder, deleteOrder } from "@/lib/database";
-import { formatDate, formatCurrency, generateOrderNumber } from "@/lib/utils";
 import OrderForm from "@/components/OrderForm";
-import { useAuth } from "@/contexts/AuthContext";
+import { getOrdersWithItems, deleteOrder, addOrder } from "@/lib/database";
+import { Order, OrderItem } from "@/lib/types";
+import { formatCurrency, formatDate } from "@/lib/utils";
 
 const Orders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [inventory, setInventory] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
-  const { isAdmin, user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [sortField, setSortField] = useState<"date" | "client" | "amount">("date");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const { isAdmin } = useAuth();
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
   useEffect(() => {
-    fetchData();
+    fetchOrders();
   }, []);
 
-  const fetchData = async () => {
+  const fetchOrders = async () => {
     try {
       setLoading(true);
-      const [ordersData, inventoryData] = await Promise.all([
-        getOrdersWithItems(),
-        getInventory()
-      ]);
-      setOrders(ordersData);
-      setInventory(inventoryData);
+      const data = await getOrdersWithItems();
+      setOrders(data);
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.error("Error fetching orders:", error);
       toast.error("Failed to load order data");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCreateOrder = async (orderData: Order, orderItems: any[]) => {
+  const handleAddOrder = async (order: Order, items: OrderItem[]) => {
     try {
-      // Generate an order ID if not provided
-      if (!orderData.order_id) {
-        orderData.order_id = generateOrderNumber();
-      }
+      const newOrder = await addOrder(order, items);
+      toast.success("Order created successfully");
       
-      // Call the addOrder function from database.ts
-      const newOrder = await addOrder(orderData, orderItems);
-
-      // Update the orders list immediately without refetching everything
-      const updatedOrder = {
-        ...newOrder,
-        items: orderItems,
-        total_amount: orderItems.reduce((total, item) => {
-          const inventoryItem = inventory.find(inv => inv.product_id === item.product_id);
-          if (inventoryItem) {
-            const sqftPerBox = (inventoryItem.tile_width * inventoryItem.tile_height * 
-                               inventoryItem.tiles_per_box) / (304.8 * 304.8);
-            return total + (sqftPerBox * item.boxes_sold * item.price_per_sqft);
-          }
-          return total;
+      // Add the new order to the state directly instead of refetching
+      const enhancedOrder = { 
+        ...newOrder, 
+        items, 
+        total_amount: items.reduce((sum, item) => {
+          const sqftPerBox = (item.product_details?.tile_width || 0) * 
+                            (item.product_details?.tile_height || 0) * 
+                            (item.product_details?.tiles_per_box || 0) / 
+                            (304.8 * 304.8);
+          return sum + (item.boxes_sold * sqftPerBox * item.price_per_sqft);
         }, 0)
       };
       
-      setOrders(prevOrders => [updatedOrder, ...prevOrders]);
-      toast.success("Order created successfully");
-      setIsFormDialogOpen(false);
-      
-      // Refetch inventory as it has been updated
-      getInventory().then(data => setInventory(data));
+      setOrders(prev => [enhancedOrder, ...prev]);
+      setIsDialogOpen(false);
     } catch (error) {
-      console.error("Error creating order:", error);
+      console.error("Error adding order:", error);
       toast.error("Failed to create order");
     }
   };
 
-  const handleDeleteClick = (orderId: string) => {
-    if (!isAdmin()) {
-      toast.error("Only administrators can delete orders");
-      return;
-    }
-    setOrderToDelete(orderId);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleConfirmDelete = async () => {
+  const handleDeleteOrder = async () => {
     if (!orderToDelete) return;
     
     try {
       await deleteOrder(orderToDelete);
-      setOrders(prevOrders => prevOrders.filter(order => order.order_id !== orderToDelete));
       toast.success("Order deleted successfully");
-      
-      // Refetch inventory as it has been updated
-      getInventory().then(data => setInventory(data));
+      setOrders(prev => prev.filter(order => order.order_id !== orderToDelete));
     } catch (error) {
       console.error("Error deleting order:", error);
       toast.error("Failed to delete order");
     } finally {
-      setDeleteDialogOpen(false);
+      setIsDeleteDialogOpen(false);
       setOrderToDelete(null);
     }
   };
 
-  // Filter orders based on search query
-  const filteredOrders = orders.filter((order) =>
-    order.client_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    order.order_id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    order.client_phone.includes(searchQuery)
-  );
+  const confirmDeleteOrder = (orderId: string) => {
+    setOrderToDelete(orderId);
+    setIsDeleteDialogOpen(true);
+  };
 
-  // Calculate total pages
+  const handleSort = (field: "date" | "client" | "amount") => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  // Filter and sort orders
+  const filteredOrders = orders
+    .filter((order) => 
+      order.client_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.order_id?.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => {
+      const multiplier = sortDirection === "asc" ? 1 : -1;
+      
+      if (sortField === "date") {
+        return multiplier * (new Date(a.order_date).getTime() - new Date(b.order_date).getTime());
+      } else if (sortField === "client") {
+        return multiplier * a.client_name.localeCompare(b.client_name);
+      } else if (sortField === "amount") {
+        const aAmount = a.total_amount || 0;
+        const bAmount = b.total_amount || 0;
+        return multiplier * (aAmount - bAmount);
+      }
+      
+      return 0;
+    });
+
+  // Pagination
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
-  
-  // Get current items
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredOrders.slice(indexOfFirstItem, indexOfLastItem);
 
-  // Change page
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
-  
-  // Calculate total square feet sold
-  const totalSqftSold = filteredOrders.reduce((acc, order) => {
-    if (!order.items) return acc;
-    
-    return acc + order.items.reduce((itemAcc, item) => {
-      // Find the corresponding inventory item
-      const inventoryItem = inventory.find(invItem => invItem.product_id === item.product_id);
-      if (!inventoryItem) return itemAcc;
-      
-      const sqftPerBox = (inventoryItem.tile_width * inventoryItem.tile_height * inventoryItem.tiles_per_box) / (304.8 * 304.8);
-      return itemAcc + (sqftPerBox * item.boxes_sold);
-    }, 0);
-  }, 0);
 
   return (
     <Layout>
       <PageHeader 
-        title="Orders Management" 
-        description="View and manage customer orders"
+        title="Order Management" 
+        description="Create and manage customer orders"
       >
-        <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
-          <Button onClick={() => setIsFormDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" /> Create Order
-          </Button>
-          <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" /> New Order
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[850px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Order</DialogTitle>
-              <DialogDescription>
-                Fill in the details to create a new customer order
-              </DialogDescription>
             </DialogHeader>
-            <OrderForm 
-              inventory={inventory}
-              onSubmit={handleCreateOrder}
-              onCancel={() => setIsFormDialogOpen(false)}
-            />
+            <OrderForm onSubmit={handleAddOrder} onCancel={() => setIsDialogOpen(false)} />
           </DialogContent>
         </Dialog>
       </PageHeader>
 
       <div className="bg-white shadow-sm rounded-lg border overflow-hidden">
-        <div className="p-4 flex flex-col md:flex-row gap-4 justify-between border-b">
-          <div className="relative w-full md:w-64">
+        <div className="p-4">
+          <div className="relative w-full sm:w-64">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
             <Input
               placeholder="Search orders..."
@@ -207,9 +187,6 @@ const Orders = () => {
               className="pl-8"
             />
           </div>
-          <div className="text-sm text-gray-500">
-            Total Area Sold: <span className="font-medium">{totalSqftSold.toFixed(2)} sqft</span>
-          </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -217,11 +194,38 @@ const Orders = () => {
             <thead className="text-xs uppercase bg-gray-50">
               <tr>
                 <th scope="col" className="px-6 py-3">Order ID</th>
-                <th scope="col" className="px-6 py-3">Date</th>
-                <th scope="col" className="px-6 py-3">Client</th>
+                <th 
+                  scope="col" 
+                  className="px-6 py-3 cursor-pointer" 
+                  onClick={() => handleSort("date")}
+                >
+                  <div className="flex items-center">
+                    Date
+                    <ArrowUpDown className="ml-1 h-4 w-4" />
+                  </div>
+                </th>
+                <th 
+                  scope="col" 
+                  className="px-6 py-3 cursor-pointer"
+                  onClick={() => handleSort("client")}
+                >
+                  <div className="flex items-center">
+                    Client
+                    <ArrowUpDown className="ml-1 h-4 w-4" />
+                  </div>
+                </th>
                 <th scope="col" className="px-6 py-3">Phone</th>
                 <th scope="col" className="px-6 py-3">Items</th>
-                <th scope="col" className="px-6 py-3">Total Amount</th>
+                <th 
+                  scope="col" 
+                  className="px-6 py-3 cursor-pointer"
+                  onClick={() => handleSort("amount")}
+                >
+                  <div className="flex items-center">
+                    Amount
+                    <ArrowUpDown className="ml-1 h-4 w-4" />
+                  </div>
+                </th>
                 <th scope="col" className="px-6 py-3">Actions</th>
               </tr>
             </thead>
@@ -229,13 +233,13 @@ const Orders = () => {
               {loading ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-4 text-center">
-                    Loading orders data...
+                    Loading order data...
                   </td>
                 </tr>
               ) : currentItems.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-4 text-center">
-                    {searchQuery ? "No matching orders found" : "No orders found. Create some!"}
+                    {searchQuery ? "No matching orders found" : "No orders found. Create one!"}
                   </td>
                 </tr>
               ) : (
@@ -246,27 +250,27 @@ const Orders = () => {
                     <td className="px-6 py-4">{order.client_name}</td>
                     <td className="px-6 py-4">{order.client_phone}</td>
                     <td className="px-6 py-4">{order.items?.length || 0}</td>
-                    <td className="px-6 py-4">{formatCurrency(order.total_amount || 0)}</td>
+                    <td className="px-6 py-4">
+                      {order.total_amount ? formatCurrency(order.total_amount) : "-"}
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex space-x-2">
-                        <Link to={`/orders/${order.order_id}`}>
-                          <Button size="sm" variant="outline">
-                            <FileText className="h-4 w-4 mr-2" />
-                            View
-                          </Button>
-                        </Link>
-                        <Button size="sm" variant="outline">
-                          <Download className="h-4 w-4 mr-2" />
-                          Invoice
+                        <Button
+                          as={Link}
+                          to={`/orders/${order.order_id}`}
+                          size="sm"
+                          variant="ghost"
+                        >
+                          <FileText className="h-4 w-4" />
                         </Button>
                         {isAdmin() && (
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => confirmDeleteOrder(order.order_id!)}
                             className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                            onClick={() => handleDeleteClick(order.order_id as string)}
                           >
-                            <Trash className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         )}
                       </div>
@@ -328,18 +332,20 @@ const Orders = () => {
           </div>
         )}
       </div>
-
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Order</AlertDialogTitle>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this order? This action will restore the items back to inventory and cannot be undone.
+              This action cannot be undone. This will permanently delete the
+              selected order and return all items to inventory.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction onClick={handleDeleteOrder} className="bg-red-500 hover:bg-red-600">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
