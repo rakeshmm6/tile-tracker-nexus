@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Download, ArrowLeft, Printer } from "lucide-react";
@@ -10,6 +9,15 @@ import { Order, OrderItem } from "@/lib/types";
 import { getOrder, getInventory } from "@/lib/database";
 import { formatDate, formatCurrency, calculateSquareFeet, calculateTaxBreakdown } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+
+// Define an interface for the enhanced order item with additional properties
+interface EnhancedOrderItem extends OrderItem {
+  brand?: string;
+  size?: string;
+  sqftPerBox?: number;
+  totalSqft?: number;
+  totalPrice?: number;
+}
 
 const OrderDetails = () => {
   const { orderId } = useParams<{ orderId: string }>();
@@ -103,7 +111,7 @@ const OrderDetails = () => {
   let totalSqft = 0;
   let subtotal = 0;
 
-  const enhancedItems = (order.items || []).map(item => {
+  const enhancedItems: EnhancedOrderItem[] = (order.items || []).map(item => {
     const product = inventoryMap[item.product_id];
     if (!product) return item;
     

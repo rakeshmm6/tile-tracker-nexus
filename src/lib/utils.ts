@@ -39,7 +39,7 @@ export function numberToWords(num: number): string {
   if (num === 0) return "Zero Rupees Only";
 
   // Handle decimals
-  const wholePart = Math.floor(num);
+  let wholePart = Math.floor(num);
   const decimalPart = Math.round((num - wholePart) * 100);
 
   let words = "";
