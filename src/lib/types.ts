@@ -48,3 +48,12 @@ export interface DashboardStat {
   trend?: number;
   icon: React.ComponentType<any>;
 }
+
+export interface User {
+  id: number;
+  username: string;
+  role: string;
+  password?: string; // Only used in mock database, excluded from auth context
+}
+
+export type UserRole = 'admin' | 'guest';

@@ -1,4 +1,3 @@
-
 import { InventoryItem, Order, OrderItem } from "./types";
 
 // Mock database functions to simulate API calls
@@ -86,6 +85,22 @@ let orderItemsData: OrderItem[] = [
   }
 ];
 
+// Mock user data for authentication
+export const usersData = [
+  {
+    id: 1,
+    username: "admin",
+    password: "admin123", // In a real app, this would be hashed
+    role: "admin"
+  },
+  {
+    id: 2,
+    username: "guest",
+    password: "guest123", // In a real app, this would be hashed
+    role: "guest"
+  }
+];
+
 // Inventory operations
 export const getInventory = async (): Promise<InventoryItem[]> => {
   return [...inventoryData];
@@ -124,6 +139,13 @@ export const decrementInventory = async (productId: number, quantity: number): P
     if (inventoryData[index].boxes_on_hand < 0) {
       inventoryData[index].boxes_on_hand = 0;
     }
+  }
+};
+
+export const incrementInventory = async (productId: number, quantity: number): Promise<void> => {
+  const index = inventoryData.findIndex(item => item.product_id === productId);
+  if (index >= 0) {
+    inventoryData[index].boxes_on_hand += quantity;
   }
 };
 
@@ -194,6 +216,22 @@ export const addOrder = async (order: Order, items: OrderItem[]): Promise<Order>
   return newOrder;
 };
 
+export const deleteOrder = async (orderId: string): Promise<void> => {
+  // Get order items before deletion to restore inventory
+  const orderItems = orderItemsData.filter(item => item.order_id === orderId);
+  
+  // Return inventory items back to stock
+  for (const item of orderItems) {
+    await incrementInventory(item.product_id, item.boxes_sold);
+  }
+  
+  // Delete order items
+  orderItemsData = orderItemsData.filter(item => item.order_id !== orderId);
+  
+  // Delete order
+  ordersData = ordersData.filter(order => order.order_id !== orderId);
+};
+
 // Dashboard statistics
 export const getDashboardStats = async (): Promise<any> => {
   const inventory = await getInventory();
@@ -223,4 +261,15 @@ export const getDashboardStats = async (): Promise<any> => {
     order_count: orders.length,
     sales_revenue: totalSalesRevenue
   };
+};
+
+// Authentication
+export const authenticateUser = async (username: string, password: string): Promise<{id: number, username: string, role: string} | null> => {
+  const user = usersData.find(u => u.username === username && u.password === password);
+  if (user) {
+    // Return user without password
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
+  return null;
 };

@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
   Home, 
   Package, 
@@ -8,9 +8,12 @@ import {
   BarChart4, 
   Settings,
   Menu,
-  X 
+  X,
+  LogOut
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -21,14 +24,21 @@ const navItems = [
   { name: "Inventory", path: "/inventory", icon: Package },
   { name: "Orders", path: "/orders", icon: ClipboardList },
   { name: "Reports", path: "/reports", icon: BarChart4 },
-  { name: "Settings", path: "/settings", icon: Settings },
+  { name: "Settings", path: "/settings", icon: Settings, adminOnly: true },
 ];
 
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
+  const { user, logout, isAdmin } = useAuth();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+
+  // Filter nav items based on role
+  const filteredNavItems = navItems.filter(item => 
+    !item.adminOnly || (item.adminOnly && isAdmin())
+  );
 
   return (
     <div className="h-screen flex flex-col md:flex-row bg-gray-50">
@@ -70,7 +80,7 @@ export default function Layout({ children }: LayoutProps) {
         </div>
 
         <nav className="space-y-1">
-          {navItems.map((item) => (
+          {filteredNavItems.map((item) => (
             <Link
               key={item.name}
               to={item.path}
@@ -89,9 +99,19 @@ export default function Layout({ children }: LayoutProps) {
         </nav>
 
         <div className="absolute bottom-4 left-4 right-4">
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-gray-50 rounded-lg p-4 mb-2">
             <p className="text-xs text-gray-500">Logged in as</p>
-            <p className="font-medium">Admin</p>
+            <div className="flex justify-between items-center">
+              <p className="font-medium">{user?.username || 'User'} ({user?.role || 'guest'})</p>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 w-8 p-0" 
+                onClick={logout}
+              >
+                <LogOut size={16} />
+              </Button>
+            </div>
           </div>
         </div>
       </div>

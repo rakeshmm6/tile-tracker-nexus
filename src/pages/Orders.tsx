@@ -6,7 +6,8 @@ import {
   FileText,
   Download,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Trash
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/Layout";
@@ -20,11 +21,22 @@ import {
   DialogTitle,
   DialogDescription
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "@/components/ui/sonner";
 import { Order } from "@/lib/types";
-import { getOrdersWithItems, getInventory, addOrder } from "@/lib/database";
+import { getOrdersWithItems, getInventory, addOrder, deleteOrder } from "@/lib/database";
 import { formatDate, formatCurrency, generateOrderNumber } from "@/lib/utils";
 import OrderForm from "@/components/OrderForm";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Orders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -32,6 +44,9 @@ const Orders = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
+  const { isAdmin, user } = useAuth();
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -92,6 +107,34 @@ const Orders = () => {
     } catch (error) {
       console.error("Error creating order:", error);
       toast.error("Failed to create order");
+    }
+  };
+
+  const handleDeleteClick = (orderId: string) => {
+    if (!isAdmin()) {
+      toast.error("Only administrators can delete orders");
+      return;
+    }
+    setOrderToDelete(orderId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!orderToDelete) return;
+    
+    try {
+      await deleteOrder(orderToDelete);
+      setOrders(prevOrders => prevOrders.filter(order => order.order_id !== orderToDelete));
+      toast.success("Order deleted successfully");
+      
+      // Refetch inventory as it has been updated
+      getInventory().then(data => setInventory(data));
+    } catch (error) {
+      console.error("Error deleting order:", error);
+      toast.error("Failed to delete order");
+    } finally {
+      setDeleteDialogOpen(false);
+      setOrderToDelete(null);
     }
   };
 
@@ -216,6 +259,16 @@ const Orders = () => {
                           <Download className="h-4 w-4 mr-2" />
                           Invoice
                         </Button>
+                        {isAdmin() && (
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleDeleteClick(order.order_id as string)}
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -275,6 +328,23 @@ const Orders = () => {
           </div>
         )}
       </div>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Order</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this order? This action will restore the items back to inventory and cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 };
