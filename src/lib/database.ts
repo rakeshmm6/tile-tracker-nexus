@@ -1,8 +1,8 @@
-import { supabase } from '@/integrations/supabase/client';
-import { User } from './types';
 
-// This is just a stub function that's maintained for backwards compatibility
-// The actual authentication now happens in the AuthContext using Supabase
+import { supabase } from '@/integrations/supabase/client';
+import { User, Order, OrderItem, InventoryItem } from './types';
+
+// Authentication
 export const authenticateUser = async (username: string, password: string): Promise<User | null> => {
   try {
     // Convert username to email format for standard users
@@ -42,7 +42,7 @@ export const authenticateUser = async (username: string, password: string): Prom
   }
 };
 
-// Mock inventory data
+// Mock inventory data - preserved for now until we migrate to Supabase
 export const inventoryData = [
   {
     product_id: 1,
@@ -91,7 +91,7 @@ export const inventoryData = [
   }
 ];
 
-// Mock orders data
+// Mock orders data - preserved for now until we migrate to Supabase
 export const ordersData = [
   {
     order_id: "ORD-2023-001",
@@ -178,7 +178,107 @@ export const ordersData = [
   }
 ];
 
-// Mock users data
+// Implementing all the missing functions that other components need
+
+// Inventory functions
+export const getInventory = async (): Promise<InventoryItem[]> => {
+  // For now, return mock data. Later we'll migrate this to Supabase
+  return inventoryData;
+};
+
+export const addInventoryItem = async (item: InventoryItem): Promise<InventoryItem> => {
+  console.log('Adding inventory item:', item);
+  // Mock implementation - we'll replace with Supabase later
+  const newId = Math.max(...inventoryData.map(i => i.product_id || 0)) + 1;
+  const newItem = { ...item, product_id: newId };
+  inventoryData.push(newItem);
+  return newItem;
+};
+
+export const updateInventoryItem = async (item: InventoryItem): Promise<InventoryItem> => {
+  console.log('Updating inventory item:', item);
+  // Mock implementation - we'll replace with Supabase later
+  const index = inventoryData.findIndex(i => i.product_id === item.product_id);
+  if (index !== -1) {
+    inventoryData[index] = item;
+    return item;
+  }
+  throw new Error('Item not found');
+};
+
+export const deleteInventoryItem = async (productId: number): Promise<void> => {
+  console.log('Deleting inventory item:', productId);
+  // Mock implementation - we'll replace with Supabase later
+  const index = inventoryData.findIndex(i => i.product_id === productId);
+  if (index !== -1) {
+    inventoryData.splice(index, 1);
+    return;
+  }
+  throw new Error('Item not found');
+};
+
+// Order functions
+export const getOrdersWithItems = async (): Promise<Order[]> => {
+  // For now, return mock data. Later we'll migrate this to Supabase
+  return ordersData;
+};
+
+export const getOrder = async (orderId: string): Promise<Order | null> => {
+  // Mock implementation - we'll replace with Supabase later
+  const order = ordersData.find(o => o.order_id === orderId);
+  return order || null;
+};
+
+export const addOrder = async (order: Order, items: OrderItem[]): Promise<Order> => {
+  console.log('Adding order:', order, 'with items:', items);
+  // Mock implementation - we'll replace with Supabase later
+  const newOrder = { ...order, items };
+  if (!newOrder.order_id) {
+    const lastOrderId = parseInt(ordersData[ordersData.length - 1]?.order_id?.split('-')[2] || '0');
+    newOrder.order_id = `ORD-2023-${(lastOrderId + 1).toString().padStart(3, '0')}`;
+  }
+  ordersData.push(newOrder as any);
+  return newOrder;
+};
+
+export const deleteOrder = async (orderId: string): Promise<void> => {
+  console.log('Deleting order:', orderId);
+  // Mock implementation - we'll replace with Supabase later
+  const index = ordersData.findIndex(o => o.order_id === orderId);
+  if (index !== -1) {
+    ordersData.splice(index, 1);
+    return;
+  }
+  throw new Error('Order not found');
+};
+
+// Dashboard
+export const getDashboardStats = async () => {
+  // Calculate stats from mock data for now
+  let totalInventoryValue = 0;
+  let totalBoxes = 0;
+
+  for (const item of inventoryData) {
+    // Calculate square feet per box
+    const sqftPerBox = (item.tile_width * item.tile_height * item.tiles_per_box) / (304.8 * 304.8);
+    // Calculate box value
+    const boxValue = sqftPerBox * item.price_per_sqft;
+    // Add to total
+    totalInventoryValue += boxValue * item.boxes_on_hand;
+    totalBoxes += item.boxes_on_hand;
+  }
+
+  const totalSales = ordersData.reduce((sum, order) => sum + (order.total_amount || 0), 0);
+
+  return {
+    inventory_value: totalInventoryValue,
+    boxes_in_stock: totalBoxes,
+    order_count: ordersData.length,
+    sales_revenue: totalSales
+  };
+};
+
+// Mock users data - now only used for reference
 export const usersData = [
   {
     id: 1,

@@ -65,6 +65,7 @@ import { formatCurrency } from "@/lib/utils";
 import ReportFilters from "@/components/ReportFilters";
 import SalesReport from "@/components/reports/SalesReport";
 import InventoryReport from "@/components/reports/InventoryReport";
+import { InventoryItem, Order } from "@/lib/types";
 
 const Reports = () => {
   const [activeTab, setActiveTab] = useState("sales");
@@ -85,6 +86,12 @@ const Reports = () => {
 
   // Loading state
   const isLoading = ordersQuery.isLoading || inventoryQuery.isLoading;
+
+  // Extract brands from inventory for filters
+  const brands = useMemo(() => {
+    if (!inventoryQuery.data) return [];
+    return Array.from(new Set(inventoryQuery.data.map(item => item.brand)));
+  }, [inventoryQuery.data]);
 
   return (
     <Layout>
@@ -109,7 +116,7 @@ const Reports = () => {
           setTimeRange={setTimeRange}
           brandFilter={brandFilter}
           setBrandFilter={setBrandFilter}
-          brands={inventoryQuery.data?.map(item => item.brand) || []}
+          brands={brands}
         />
         
         {isLoading ? (
