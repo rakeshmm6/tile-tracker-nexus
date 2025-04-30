@@ -1,30 +1,99 @@
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const Login = () => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const [error, setError] = useState<string | null>(null);
+  const { login, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      const from = location.state?.from?.pathname || '/';
+      navigate(from, { replace: true });
+    }
+  }, [user, navigate, location]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     setIsLoading(true);
     
     try {
-      const success = await login(username, password);
-      if (success) {
-        navigate('/');
+      if (email === 'admin' && password === 'admin123') {
+        // Special case for admin hardcoded login
+        await createOrLoginUser('admin@tiletracker.com', 'admin123', 'admin');
+      } else if (email === 'guest' && password === 'guest123') {
+        // Special case for guest hardcoded login
+        await createOrLoginUser('guest@tiletracker.com', 'guest123', 'guest');
+      } else {
+        // Regular login attempt
+        const success = await login(email, password);
+        if (success) {
+          const from = location.state?.from?.pathname || '/';
+          navigate(from, { replace: true });
+        }
       }
+    } catch (error: any) {
+      console.error('Login error:', error);
+      setError(error.message || 'An error occurred during login');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Helper function to create or login predefined users
+  const createOrLoginUser = async (email: string, password: string, role: string) => {
+    // First check if the user exists
+    const { data: existingUser } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (existingUser && existingUser.user) {
+      // User exists, just log them in
+      const success = await login(email, password);
+      if (success) {
+        const from = location.state?.from?.pathname || '/';
+        navigate(from, { replace: true });
+      }
+      return;
+    }
+
+    // User doesn't exist, create them
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          role: role,
+          username: role
+        }
+      }
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    // Now login with the newly created user
+    const success = await login(email, password);
+    if (success) {
+      const from = location.state?.from?.pathname || '/';
+      navigate(from, { replace: true });
     }
   };
 
@@ -37,13 +106,19 @@ const Login = () => {
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="email">Username</Label>
               <Input
-                id="username"
+                id="email"
                 placeholder="Enter your username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>

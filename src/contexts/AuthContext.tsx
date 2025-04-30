@@ -1,74 +1,146 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authenticateUser } from '@/lib/database';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { Session, User } from '@supabase/supabase-js';
 
-type User = {
-  id: number;
+type UserProfile = {
+  id: string;
   username: string;
   role: string;
-} | null;
+};
 
 type AuthContextType = {
-  user: User;
-  login: (username: string, password: string) => Promise<boolean>;
+  user: User | null;
+  profile: UserProfile | null;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   isAdmin: () => boolean;
+  isLoading: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   
-  // On mount, check local storage for user
-  useEffect(() => {
-    const storedUser = localStorage.getItem('tileTracker_user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error('Failed to parse stored user data:', error);
-        localStorage.removeItem('tileTracker_user');
+  // Fetch the user's profile data
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, role')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return null;
       }
+      
+      return data as UserProfile;
+    } catch (error) {
+      console.error('Error in fetchProfile:', error);
+      return null;
     }
+  };
+
+  // Effect for setting up auth state listener and checking initial session
+  useEffect(() => {
+    // First check for existing session
+    const checkSession = async () => {
+      setIsLoading(true);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          setUser(session.user);
+          const userProfile = await fetchProfile(session.user.id);
+          setProfile(userProfile);
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkSession();
+    
+    // Then set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          // Use setTimeout to avoid potential deadlocks with Supabase client
+          setTimeout(async () => {
+            const userProfile = await fetchProfile(session.user.id);
+            setProfile(userProfile);
+          }, 0);
+        } else {
+          setProfile(null);
+        }
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<boolean> => {
+    setIsLoading(true);
     try {
-      const userData = await authenticateUser(username, password);
-      
-      if (userData) {
-        setUser(userData);
-        localStorage.setItem('tileTracker_user', JSON.stringify(userData));
-        toast.success(`Welcome back, ${userData.username}!`);
-        return true;
-      } else {
-        toast.error('Invalid username or password');
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        toast.error(error.message);
         return false;
       }
+
+      if (data?.user) {
+        const userProfile = await fetchProfile(data.user.id);
+        setProfile(userProfile);
+        toast.success(`Welcome back, ${userProfile?.username || data.user.email}!`);
+        return true;
+      }
+      
+      return false;
     } catch (error) {
       console.error('Login error:', error);
       toast.error('An error occurred during login');
       return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('tileTracker_user');
-    toast.info('You have been logged out');
-    navigate('/login');
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      setProfile(null);
+      toast.info('You have been logged out');
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('An error occurred during logout');
+    }
   };
 
   const isAdmin = () => {
-    return user?.role === 'admin';
+    return profile?.role === 'admin';
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAdmin }}>
+    <AuthContext.Provider value={{ user, profile, login, logout, isAdmin, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

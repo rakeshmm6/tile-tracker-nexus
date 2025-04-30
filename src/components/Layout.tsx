@@ -29,7 +29,7 @@ const navItems = [
 
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
-  const { user, logout, isAdmin } = useAuth();
+  const { profile, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
 
@@ -102,7 +102,7 @@ export default function Layout({ children }: LayoutProps) {
           <div className="bg-gray-50 rounded-lg p-4 mb-2">
             <p className="text-xs text-gray-500">Logged in as</p>
             <div className="flex justify-between items-center">
-              <p className="font-medium">{user?.username || 'User'} ({user?.role || 'guest'})</p>
+              <p className="font-medium">{profile?.username || 'User'} ({profile?.role || 'guest'})</p>
               <Button 
                 variant="ghost" 
                 size="sm" 
