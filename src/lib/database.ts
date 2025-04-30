@@ -43,7 +43,7 @@ export const authenticateUser = async (username: string, password: string): Prom
 };
 
 // Mock inventory data - preserved for now until we migrate to Supabase
-export const inventoryData = [
+export const inventoryData: InventoryItem[] = [
   {
     product_id: 1,
     brand: "Kajaria",
@@ -92,7 +92,7 @@ export const inventoryData = [
 ];
 
 // Mock orders data - preserved for now until we migrate to Supabase
-export const ordersData = [
+export const ordersData: Order[] = [
   {
     order_id: "ORD-2023-001",
     client_name: "Rahul Sharma",
@@ -190,7 +190,10 @@ export const addInventoryItem = async (item: InventoryItem): Promise<InventoryIt
   console.log('Adding inventory item:', item);
   // Mock implementation - we'll replace with Supabase later
   const newId = Math.max(...inventoryData.map(i => i.product_id || 0)) + 1;
-  const newItem = { ...item, product_id: newId };
+  const newItem: InventoryItem = { 
+    ...item, 
+    product_id: newId 
+  };
   inventoryData.push(newItem);
   return newItem;
 };
