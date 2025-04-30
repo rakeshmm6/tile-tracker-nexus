@@ -1,15 +1,13 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { User, Order, OrderItem, InventoryItem } from './types';
 
 // Authentication
 export const authenticateUser = async (username: string, password: string): Promise<User | null> => {
   try {
-    // Convert username to email format for standard users
-    const email = username.includes('@') ? username : `${username}@tiletracker.com`;
-    
+    // For simplicity, support direct logins with username/password without email conversion
+    // This allows admin/admin123 to work directly
     const { data, error } = await supabase.auth.signInWithPassword({
-      email,
+      email: username.includes('@') ? username : username + '@example.com', // Use a valid domain
       password
     });
     

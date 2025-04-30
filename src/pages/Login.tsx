@@ -9,9 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/sonner';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,19 +34,12 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      if (email === 'admin' && password === 'admin123') {
-        // Special case for admin hardcoded login
-        await createOrLoginUser('admin@tiletracker.com', 'admin123', 'admin');
-      } else if (email === 'guest' && password === 'guest123') {
-        // Special case for guest hardcoded login
-        await createOrLoginUser('guest@tiletracker.com', 'guest123', 'guest');
-      } else {
-        // Regular login attempt
-        const success = await login(email, password);
-        if (success) {
-          const from = location.state?.from?.pathname || '/';
-          navigate(from, { replace: true });
-        }
+      // Try to login with the provided credentials
+      const success = await login(username, password);
+      
+      if (success) {
+        const from = location.state?.from?.pathname || '/';
+        navigate(from, { replace: true });
       }
     } catch (error: any) {
       console.error('Login error:', error);
@@ -55,47 +49,22 @@ const Login = () => {
     }
   };
 
-  // Helper function to create or login predefined users
-  const createOrLoginUser = async (email: string, password: string, role: string) => {
-    // First check if the user exists
-    const { data: existingUser } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-
-    if (existingUser && existingUser.user) {
-      // User exists, just log them in
-      const success = await login(email, password);
-      if (success) {
-        const from = location.state?.from?.pathname || '/';
-        navigate(from, { replace: true });
+  // Call the setup function when the app loads for the first time
+  useEffect(() => {
+    const setupInitialUsers = async () => {
+      try {
+        const response = await fetch(
+          'https://bdhxrmfyewzyhthrwnyq.supabase.co/functions/v1/setup-initial-users'
+        );
+        const data = await response.json();
+        console.log('Setup initial users result:', data);
+      } catch (error) {
+        console.error('Error setting up initial users:', error);
       }
-      return;
-    }
+    };
 
-    // User doesn't exist, create them
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          role: role,
-          username: role
-        }
-      }
-    });
-
-    if (error) {
-      throw error;
-    }
-
-    // Now login with the newly created user
-    const success = await login(email, password);
-    if (success) {
-      const from = location.state?.from?.pathname || '/';
-      navigate(from, { replace: true });
-    }
-  };
+    setupInitialUsers();
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -113,12 +82,12 @@ const Login = () => {
               </Alert>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email">Username</Label>
+              <Label htmlFor="username">Username</Label>
               <Input
-                id="email"
+                id="username"
                 placeholder="Enter your username"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
               />
             </div>

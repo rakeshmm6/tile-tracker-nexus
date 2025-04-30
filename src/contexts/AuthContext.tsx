@@ -14,7 +14,7 @@ type UserProfile = {
 type AuthContextType = {
   user: User | null;
   profile: UserProfile | null;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   isAdmin: () => boolean;
   isLoading: boolean;
@@ -92,9 +92,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (username: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     try {
+      // Handle the special case of demo users
+      let email = username;
+      
+      // Transform username to valid email format for demo accounts
+      if (username === 'admin') {
+        email = 'admin@example.com';
+      } else if (username === 'guest') {
+        email = 'guest@example.com';
+      } else if (!username.includes('@')) {
+        // For other usernames, append a valid domain
+        email = `${username}@example.com`;
+      }
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -108,12 +121,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (data?.user) {
         const userProfile = await fetchProfile(data.user.id);
         setProfile(userProfile);
-        toast.success(`Welcome back, ${userProfile?.username || data.user.email}!`);
+        toast.success(`Welcome back, ${userProfile?.username || email}!`);
         return true;
       }
       
       return false;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
       toast.error('An error occurred during login');
       return false;

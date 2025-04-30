@@ -25,12 +25,12 @@ serve(async (req) => {
 
     // Create admin user if it doesn't exist
     const { data: adminExists, error: adminCheckError } = await supabaseAdmin.auth.admin.listUsers();
-    const adminUser = adminExists?.users.find(u => u.email === 'admin@tiletracker.com');
+    const adminUser = adminExists?.users.find(u => u.email === 'admin@example.com');
 
     if (!adminUser) {
       // Create admin user
       const { data: adminData, error: adminError } = await supabaseAdmin.auth.admin.createUser({
-        email: 'admin@tiletracker.com',
+        email: 'admin@example.com',
         password: 'admin123',
         email_confirm: true,
         user_metadata: {
@@ -54,12 +54,12 @@ serve(async (req) => {
     }
 
     // Create guest user if it doesn't exist
-    const guestUser = adminExists?.users.find(u => u.email === 'guest@tiletracker.com');
+    const guestUser = adminExists?.users.find(u => u.email === 'guest@example.com');
 
     if (!guestUser) {
       // Create guest user
       const { data: guestData, error: guestError } = await supabaseAdmin.auth.admin.createUser({
-        email: 'guest@tiletracker.com',
+        email: 'guest@example.com',
         password: 'guest123',
         email_confirm: true,
         user_metadata: {
