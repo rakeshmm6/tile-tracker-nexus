@@ -1,4 +1,3 @@
-
 import React, { useMemo } from "react";
 import { 
   BarChart, 
@@ -159,7 +158,7 @@ const InventoryReport: React.FC<InventoryReportProps> = ({ inventory, orders, br
         return {
           product_id: product.product_id,
           brand: product.brand,
-          size: `${product.tile_width}x${product.tile_height}`,
+          size: `${product.tile_width}x${product.tile_height} ft`,
           boxes_on_hand: product.boxes_on_hand,
           boxes_sold: sold,
           turnover_ratio: turnoverRatio
@@ -301,7 +300,7 @@ const InventoryReport: React.FC<InventoryReportProps> = ({ inventory, orders, br
                   lowStockItems.map((item) => (
                     <TableRow key={item.product_id}>
                       <TableCell className="font-medium">{item.brand}</TableCell>
-                      <TableCell>{`${item.tile_width}x${item.tile_height}`}</TableCell>
+                      <TableCell>{`${item.tile_width}x${item.tile_height} ft`}</TableCell>
                       <TableCell>{item.boxes_on_hand}</TableCell>
                       <TableCell>{formatCurrency(item.price_per_sqft)}/sqft</TableCell>
                     </TableRow>

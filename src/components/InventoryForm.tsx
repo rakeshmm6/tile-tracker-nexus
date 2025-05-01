@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,20 +19,44 @@ export default function InventoryForm({
   const [formData, setFormData] = React.useState<InventoryItem>(
     initialData || {
       brand: "",
+      product_name: "",
       tile_width: 0,
       tile_height: 0,
+      tile_width_value: 0,
+      tile_width_unit: 'ft',
+      tile_height_value: 0,
+      tile_height_unit: 'ft',
       tiles_per_box: 0,
       boxes_on_hand: 0,
       price_per_sqft: 0,
     }
   );
+  const [widthUnit, setWidthUnit] = React.useState<'ft' | 'mm' | 'inch'>(initialData?.tile_width_unit || 'ft');
+  const [heightUnit, setHeightUnit] = React.useState<'ft' | 'mm' | 'inch'>(initialData?.tile_height_unit || 'ft');
+
+  React.useEffect(() => {
+    if (initialData) {
+      setFormData((prev) => ({
+        ...prev,
+        tile_width_value: initialData.tile_width_value ?? initialData.tile_width,
+        tile_height_value: initialData.tile_height_value ?? initialData.tile_height,
+      }));
+    }
+  }, [initialData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === "brand" ? value : Number(value),
+      [name]: name === "brand" ? value : name === "product_name" ? value : Number(value),
     }));
+  };
+
+  const toFeet = (value: number, unit: string) => {
+    if (unit === 'ft') return value;
+    if (unit === 'mm') return value / 304.8;
+    if (unit === 'inch') return value / 12;
+    return value;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -44,10 +67,14 @@ export default function InventoryForm({
       toast.error("Please enter a brand name");
       return;
     }
+    if (!formData.product_name.trim()) {
+      toast.error("Please enter a product name");
+      return;
+    }
     
     if (
-      formData.tile_width <= 0 ||
-      formData.tile_height <= 0 ||
+      formData.tile_width_value <= 0 ||
+      formData.tile_height_value <= 0 ||
       formData.tiles_per_box <= 0 ||
       formData.boxes_on_hand < 0 ||
       formData.price_per_sqft <= 0
@@ -56,7 +83,18 @@ export default function InventoryForm({
       return;
     }
     
-    onSubmit(formData);
+    // Convert to feet for calculations
+    const widthInFeet = toFeet(formData.tile_width_value, widthUnit);
+    const heightInFeet = toFeet(formData.tile_height_value, heightUnit);
+    onSubmit({
+      ...formData,
+      tile_width: widthInFeet,
+      tile_height: heightInFeet,
+      tile_width_value: formData.tile_width_value,
+      tile_width_unit: widthUnit,
+      tile_height_value: formData.tile_height_value,
+      tile_height_unit: heightUnit,
+    });
   };
 
   return (
@@ -73,34 +111,70 @@ export default function InventoryForm({
         />
       </div>
       
+      <div className="space-y-2">
+        <Label htmlFor="product_name">Product Name</Label>
+        <Input
+          id="product_name"
+          name="product_name"
+          value={formData.product_name}
+          onChange={handleChange}
+          placeholder="e.g. Elite Glossy White"
+          required
+        />
+      </div>
+      
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="tile_width">Tile Width (mm)</Label>
-          <Input
-            id="tile_width"
-            name="tile_width"
-            type="number"
-            value={formData.tile_width || ""}
-            onChange={handleChange}
-            placeholder="600"
-            min="0"
-            className="number-input"
-            required
-          />
+          <Label htmlFor="tile_width_value">Tile Width</Label>
+          <div className="flex gap-2">
+            <Input
+              id="tile_width_value"
+              name="tile_width_value"
+              type="number"
+              value={formData.tile_width_value || ""}
+              onChange={handleChange}
+              placeholder="2"
+              min="0"
+              step="0.01"
+              className="number-input"
+              required
+            />
+            <select
+              value={widthUnit}
+              onChange={e => setWidthUnit(e.target.value as 'ft' | 'mm' | 'inch')}
+              className="border rounded px-2 py-1 bg-white"
+            >
+              <option value="ft">ft</option>
+              <option value="mm">mm</option>
+              <option value="inch">inch</option>
+            </select>
+          </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="tile_height">Tile Height (mm)</Label>
-          <Input
-            id="tile_height"
-            name="tile_height"
-            type="number"
-            value={formData.tile_height || ""}
-            onChange={handleChange}
-            placeholder="600"
-            min="0"
-            className="number-input"
-            required
-          />
+          <Label htmlFor="tile_height_value">Tile Height</Label>
+          <div className="flex gap-2">
+            <Input
+              id="tile_height_value"
+              name="tile_height_value"
+              type="number"
+              value={formData.tile_height_value || ""}
+              onChange={handleChange}
+              placeholder="2"
+              min="0"
+              step="0.01"
+              className="number-input"
+              required
+            />
+            <select
+              value={heightUnit}
+              onChange={e => setHeightUnit(e.target.value as 'ft' | 'mm' | 'inch')}
+              className="border rounded px-2 py-1 bg-white"
+            >
+              <option value="ft">ft</option>
+              <option value="mm">mm</option>
+              <option value="inch">inch</option>
+            </select>
+          </div>
         </div>
       </div>
       

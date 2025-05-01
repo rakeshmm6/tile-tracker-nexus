@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -347,7 +346,7 @@ export default function OrderForm({ inventory, onSubmit, onCancel }: OrderFormPr
                       value={item.product_id?.toString() || "0"}
                       disabled={item.boxes_on_hand === 0}
                     >
-                      {item.brand} ({item.tile_width}x{item.tile_height}mm) - {item.boxes_on_hand} boxes left
+                      {item.brand} ({item.tile_width}x{item.tile_height}ft) - {item.boxes_on_hand} boxes left
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -1,9 +1,13 @@
-
 export interface InventoryItem {
   product_id?: number;
   brand: string;
-  tile_width: number;
-  tile_height: number;
+  product_name: string;
+  tile_width: number; // always in feet, for calculations
+  tile_height: number; // always in feet, for calculations
+  tile_width_value: number; // original value
+  tile_width_unit: 'ft' | 'mm' | 'inch';
+  tile_height_value: number; // original value
+  tile_height_unit: 'ft' | 'mm' | 'inch';
   tiles_per_box: number;
   boxes_on_hand: number;
   price_per_sqft: number;

@@ -1,4 +1,3 @@
-
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -120,13 +119,9 @@ export function calculateTaxBreakdown(amount: number, stateCode: string, isRever
 }
 
 export function calculateSquareFeet(tileWidth: number, tileHeight: number, tilesPerBox: number): number {
-  // Convert tile dimensions from mm to feet
-  const widthInFeet = tileWidth / 304.8;
-  const heightInFeet = tileHeight / 304.8;
-  
+  // tileWidth and tileHeight are now in feet
   // Calculate area per tile in square feet
-  const areaPerTile = widthInFeet * heightInFeet;
-  
+  const areaPerTile = tileWidth * tileHeight;
   // Calculate total square feet per box
   return areaPerTile * tilesPerBox;
 }

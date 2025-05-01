@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -43,7 +42,8 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
             <tr>
               <th scope="col" className="px-6 py-3">Product ID</th>
               <th scope="col" className="px-6 py-3">Brand</th>
-              <th scope="col" className="px-6 py-3">Size (mm)</th>
+              <th scope="col" className="px-6 py-3">Product Name</th>
+              <th scope="col" className="px-6 py-3">Size (ft)</th>
               <th scope="col" className="px-6 py-3">Tiles/Box</th>
               <th scope="col" className="px-6 py-3">Sqft/Box</th>
               <th scope="col" className="px-6 py-3">Price/Sqft</th>
@@ -78,7 +78,16 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                   <tr key={item.product_id} className="border-b hover:bg-gray-50">
                     <td className="px-6 py-4">{item.product_id}</td>
                     <td className="px-6 py-4 font-medium">{item.brand}</td>
-                    <td className="px-6 py-4">{item.tile_width}×{item.tile_height}</td>
+                    <td className="px-6 py-4">{item.product_name}</td>
+                    <td className="px-6 py-4">{
+                      item.tile_width_value
+                    } {
+                      item.tile_width_unit === 'inch' ? 'in' : item.tile_width_unit
+                    }×{
+                      item.tile_height_value
+                    } {
+                      item.tile_height_unit === 'inch' ? 'in' : item.tile_height_unit
+                    }</td>
                     <td className="px-6 py-4">{item.tiles_per_box}</td>
                     <td className="px-6 py-4">{sqftPerBox.toFixed(2)}</td>
                     <td className="px-6 py-4">₹{item.price_per_sqft}</td>
