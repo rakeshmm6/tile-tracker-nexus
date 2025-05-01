@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { 
   Plus, 
@@ -87,7 +86,7 @@ const Inventory = () => {
 
   const handleEditItem = async (item: InventoryItem) => {
     try {
-      await updateInventoryItem(item);
+      await updateInventoryItem(item.product_id!, item);
       toast.success("Item updated successfully");
       fetchInventory();
       setEditingItem(null);
