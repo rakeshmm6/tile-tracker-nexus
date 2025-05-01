@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
 
 const Login = () => {
@@ -49,22 +48,7 @@ const Login = () => {
     }
   };
 
-  // Call the setup function when the app loads for the first time
-  useEffect(() => {
-    const setupInitialUsers = async () => {
-      try {
-        const response = await fetch(
-          'https://bdhxrmfyewzyhthrwnyq.supabase.co/functions/v1/setup-initial-users'
-        );
-        const data = await response.json();
-        console.log('Setup initial users result:', data);
-      } catch (error) {
-        console.error('Error setting up initial users:', error);
-      }
-    };
-
-    setupInitialUsers();
-  }, []);
+  // We've removed the setupInitialUsers function call here
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
