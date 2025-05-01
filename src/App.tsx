@@ -2,6 +2,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import { useEffect } from "react";
+import { supabase } from "./integrations/supabase/client";
 
 // Pages
 import Dashboard from "./pages/Dashboard";
@@ -23,6 +25,20 @@ const queryClient = new QueryClient({
   },
 });
 
+// Function to set up demo data
+const setupDemoData = async () => {
+  try {
+    // Create users and demo data
+    await Promise.all([
+      supabase.functions.invoke("setup-initial-users"),
+      supabase.functions.invoke("setup-demo-data")
+    ]);
+    console.log("Setup complete");
+  } catch (error) {
+    console.error("Error during setup:", error);
+  }
+};
+
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
@@ -37,6 +53,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 // Routes setup with AuthProvider
 const AppRoutes = () => {
+  useEffect(() => {
+    // Run setup only once when the app starts
+    setupDemoData();
+  }, []);
+
   return (
     <AuthProvider>
       <Routes>

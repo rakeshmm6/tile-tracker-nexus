@@ -14,10 +14,10 @@ export interface Order {
   client_name: string;
   client_phone: string;
   client_address: string;
-  client_gst: string;
-  vehicle_no: string;
+  client_gst: string | null;
+  vehicle_no: string | null;
   is_reverse_charge: boolean;
-  eway_bill: string;
+  eway_bill: string | null;
   order_date: string;
   hsn_code: string;
   state_code: string;

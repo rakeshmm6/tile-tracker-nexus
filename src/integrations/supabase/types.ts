@@ -9,6 +9,117 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      inventory: {
+        Row: {
+          boxes_on_hand: number
+          brand: string
+          price_per_sqft: number
+          product_id: number
+          tile_height: number
+          tile_width: number
+          tiles_per_box: number
+        }
+        Insert: {
+          boxes_on_hand: number
+          brand: string
+          price_per_sqft: number
+          product_id?: number
+          tile_height: number
+          tile_width: number
+          tiles_per_box: number
+        }
+        Update: {
+          boxes_on_hand?: number
+          brand?: string
+          price_per_sqft?: number
+          product_id?: number
+          tile_height?: number
+          tile_width?: number
+          tiles_per_box?: number
+        }
+        Relationships: []
+      }
+      order_items: {
+        Row: {
+          boxes_sold: number
+          item_id: number
+          order_id: string
+          price_per_sqft: number
+          product_id: number
+        }
+        Insert: {
+          boxes_sold: number
+          item_id?: number
+          order_id: string
+          price_per_sqft: number
+          product_id: number
+        }
+        Update: {
+          boxes_sold?: number
+          item_id?: number
+          order_id?: string
+          price_per_sqft?: number
+          product_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          client_address: string
+          client_gst: string | null
+          client_name: string
+          client_phone: string
+          eway_bill: string | null
+          hsn_code: string
+          is_reverse_charge: boolean
+          order_date: string
+          order_id: string
+          state_code: string
+          vehicle_no: string | null
+        }
+        Insert: {
+          client_address: string
+          client_gst?: string | null
+          client_name: string
+          client_phone: string
+          eway_bill?: string | null
+          hsn_code: string
+          is_reverse_charge?: boolean
+          order_date?: string
+          order_id?: string
+          state_code: string
+          vehicle_no?: string | null
+        }
+        Update: {
+          client_address?: string
+          client_gst?: string | null
+          client_name?: string
+          client_phone?: string
+          eway_bill?: string | null
+          hsn_code?: string
+          is_reverse_charge?: boolean
+          order_date?: string
+          order_id?: string
+          state_code?: string
+          vehicle_no?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
