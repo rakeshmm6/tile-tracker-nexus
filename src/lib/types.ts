@@ -15,9 +15,11 @@ export interface InventoryItem {
 
 export interface Order {
   order_id?: string;
+  order_type: 'quotation' | 'tax_invoice';
   client_name: string;
   client_phone: string;
   client_address: string;
+  client_state: string; // State name for GST calculation
   client_gst: string | null;
   vehicle_no: string | null;
   is_reverse_charge: boolean;
@@ -26,6 +28,15 @@ export interface Order {
   hsn_code: string;
   state_code: string;
   items?: OrderItem[];
+  subtotal?: number;
+  // GST fields
+  gst_type?: 'none' | 'igst' | 'cgst_sgst'; // none for quotations
+  igst_rate?: number;
+  igst_amount?: number;
+  cgst_rate?: number;
+  cgst_amount?: number;
+  sgst_rate?: number;
+  sgst_amount?: number;
   total_amount?: number;
 }
 

@@ -1,10 +1,7 @@
-
 import React from "react";
 import { 
   Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle,
+  DialogContent,
   DialogTrigger
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -32,15 +29,14 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({
           <Plus className="mr-2 h-4 w-4" /> New Order
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[850px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Create New Order</DialogTitle>
-        </DialogHeader>
-        <OrderForm 
-          inventory={inventory} 
-          onSubmit={onSubmit} 
-          onCancel={() => setIsOpen(false)} 
-        />
+      <DialogContent className="w-[95vw] sm:w-[90vw] md:max-w-[1200px] h-[95vh] sm:h-[90vh] p-3 sm:p-6 overflow-hidden flex flex-col">
+        <div className="flex-1 overflow-y-auto pr-2">
+          <OrderForm 
+            inventory={inventory} 
+            onSubmit={onSubmit} 
+            onCancel={() => setIsOpen(false)} 
+          />
+        </div>
       </DialogContent>
     </Dialog>
   );

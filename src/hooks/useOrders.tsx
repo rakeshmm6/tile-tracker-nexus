@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Order, OrderItem } from "@/lib/types";
 import { getOrdersWithItems, deleteOrder, addOrder, getInventory } from "@/lib/database";
@@ -41,11 +40,28 @@ export function useOrders() {
 
   const handleAddOrder = async (order: Order, items: OrderItem[]) => {
     try {
-      const newOrder = await addOrder(order, items);
+      console.log("Starting order creation in useOrders:", { order, items });
+      
+      // Validate order data
+      if (!order.client_state) {
+        throw new Error("Client state is required");
+      }
+      
+      // Add order type and GST type if not present
+      const enhancedOrder = {
+        ...order,
+        order_type: order.order_type || 'tax_invoice',
+        gst_type: order.client_state === 'Maharashtra' ? 'cgst_sgst' : 'igst'
+      };
+      
+      console.log("Calling addOrder with:", JSON.stringify(enhancedOrder, null, 2));
+      const newOrder = await addOrder(enhancedOrder, items);
+      console.log("Order created successfully:", newOrder);
+      
       toast.success("Order created successfully");
       
       // Add the new order to the state directly instead of refetching
-      const enhancedOrder = { 
+      const enhancedOrderWithItems = { 
         ...newOrder, 
         items, 
         total_amount: items.reduce((sum, item) => {
@@ -57,13 +73,21 @@ export function useOrders() {
         }, 0)
       };
       
-      setOrders(prev => [enhancedOrder, ...prev]);
+      setOrders(prev => [enhancedOrderWithItems, ...prev]);
       
       // Update inventory data
       await fetchData();
     } catch (error) {
-      console.error("Error adding order:", error);
-      toast.error("Failed to create order");
+      console.error("Detailed error in handleAddOrder:", error);
+      if (error instanceof Error) {
+        console.error("Error name:", error.name);
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+      } else if (typeof error === 'object' && error !== null) {
+        console.error("Error details:", JSON.stringify(error, null, 2));
+      }
+      toast.error(error instanceof Error ? error.message : "Failed to create order. Check console for details.");
+      throw error; // Re-throw to be caught by the form handler
     }
   };
 
