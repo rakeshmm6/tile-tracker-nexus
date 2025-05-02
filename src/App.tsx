@@ -12,6 +12,7 @@ import OrderDetails from "./pages/OrderDetails";
 import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
+import PriceCalculator from "./pages/PriceCalculator";
 
 // Context
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -47,6 +48,7 @@ const AppRoutes = () => {
         <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
         <Route path="/orders/:orderId" element={<ProtectedRoute><OrderDetails /></ProtectedRoute>} />
         <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+        <Route path="/price-calculator" element={<ProtectedRoute><PriceCalculator /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AuthProvider>

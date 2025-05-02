@@ -47,6 +47,8 @@ export interface OrderItem {
   product_details?: InventoryItem;
   boxes_sold: number;
   price_per_sqft: number;
+  price_per_box?: number; // Optional: for price per box
+  usePricePerBox?: boolean; // Optional: for price per box
 }
 
 export interface CartItem extends OrderItem {

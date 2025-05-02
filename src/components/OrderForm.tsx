@@ -51,11 +51,15 @@ export default function OrderForm({
   const [currentItem, setCurrentItem] = React.useState<{
     product_id: number;
     boxes_sold: number;
+    price_per_sqft: number;
     price_per_box?: number;
+    usePricePerBox?: boolean;
   }>({
     product_id: 0,
     boxes_sold: 1,
-    price_per_box: undefined,
+    price_per_sqft: 0,
+    price_per_box: 0,
+    usePricePerBox: false,
   });
 
   const [cart, setCart] = React.useState<CartItem[]>([]);
@@ -83,7 +87,7 @@ export default function OrderForm({
     const { name, value } = e.target;
     setCurrentItem((prev) => ({
       ...prev,
-      [name]: name === "product_id" ? Number(value) : Number(value),
+      [name]: Number(value),
     }));
   };
 
@@ -121,65 +125,40 @@ export default function OrderForm({
       product.tiles_per_box
     );
 
-    // Calculate total square feet
-    const totalSqft = sqftPerBox * currentItem.boxes_sold;
-
-    // Calculate price per sqft based on price per box if provided
-    const effectivePricePerSqft = currentItem.price_per_box 
-      ? currentItem.price_per_box / sqftPerBox 
-      : product.price_per_sqft;
-
-    // Calculate total price
-    const totalPrice = totalSqft * effectivePricePerSqft;
-
-    const cartItem: CartItem = {
-      product_id: product.product_id!,
-      brand: product.brand,
-      boxes_sold: currentItem.boxes_sold,
-      price_per_sqft: effectivePricePerSqft,
-      sqft_per_box: sqftPerBox,
-      total_sqft: totalSqft,
-      total_price: totalPrice,
-    };
-
-    // Check if product already exists in cart
-    const existingItemIndex = cart.findIndex(
-      (item) => item.product_id === cartItem.product_id
-    );
-
-    if (existingItemIndex >= 0) {
-      // Update quantity if product already in cart
-      const updatedCart = [...cart];
-      const existingItem = updatedCart[existingItemIndex];
-      
-      // Check if adding would exceed stock
-      const newQuantity = existingItem.boxes_sold + cartItem.boxes_sold;
-      if (newQuantity > product.boxes_on_hand) {
-        toast.error(`Cannot add more boxes than available in stock (${product.boxes_on_hand})`);
-        return;
-      }
-      
-      updatedCart[existingItemIndex] = {
-        ...existingItem,
-        boxes_sold: newQuantity,
-        total_sqft: sqftPerBox * newQuantity,
-        total_price: sqftPerBox * newQuantity * cartItem.price_per_sqft,
-      };
-      
-      setCart(updatedCart);
-    } else {
-      // Add new item to cart
-      setCart((prev) => [...prev, cartItem]);
+    // Use price per box if selected, otherwise price per sqft
+    let price_per_sqft = currentItem.price_per_sqft;
+    let price_per_box = undefined;
+    if (currentItem.usePricePerBox && currentItem.price_per_box) {
+      price_per_box = currentItem.price_per_box;
+      price_per_sqft = sqftPerBox > 0 ? price_per_box / sqftPerBox : 0;
     }
 
-    // Reset the current item form
+    const total_sqft = sqftPerBox * currentItem.boxes_sold;
+    const total_price = total_sqft * price_per_sqft;
+
+    setCart((prev) => [
+      ...prev,
+      {
+        product_id: currentItem.product_id,
+        brand: product.brand,
+        boxes_sold: currentItem.boxes_sold,
+        price_per_sqft,
+        price_per_box,
+        usePricePerBox: currentItem.usePricePerBox,
+        sqft_per_box: sqftPerBox,
+        total_sqft,
+        total_price,
+        product_details: product,
+      },
+    ]);
+
     setCurrentItem({
       product_id: 0,
       boxes_sold: 1,
-      price_per_box: undefined,
+      price_per_sqft: 0,
+      price_per_box: 0,
+      usePricePerBox: false,
     });
-    
-    toast.success(`Added ${currentItem.boxes_sold} boxes of ${product.brand} to cart`);
   };
 
   const removeFromCart = (index: number) => {
@@ -334,294 +313,359 @@ export default function OrderForm({
       </div>
 
       <form onSubmit={handleSubmitOrder} className="space-y-6">
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Order Information</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="client_name">Client Name</Label>
-              <Input
-                id="client_name"
-                name="client_name"
-                value={orderData.client_name}
-                onChange={handleOrderChange}
-                required
-              />
+        <div className="space-y-6">
+          {/* Main Form Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left Column - Order Information */}
+            <div className="bg-gray-50 p-4 rounded-lg border">
+              <h3 className="text-lg font-medium mb-4">Order Information</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
+                  <Label htmlFor="order_type">Order Type</Label>
+                  <Select value={orderData.order_type} onValueChange={handleOrderTypeChange}>
+                    <SelectTrigger id="order_type">
+                      <SelectValue placeholder="Select order type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="quotation">Quotation</SelectItem>
+                      <SelectItem value="tax_invoice">Tax Invoice</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <Label htmlFor="client_name">Client Name</Label>
+                  <Input
+                    id="client_name"
+                    name="client_name"
+                    value={orderData.client_name}
+                    onChange={handleOrderChange}
+                    required
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <Label htmlFor="client_state">State</Label>
+                  <Select value={orderData.client_state} onValueChange={handleStateChange}>
+                    <SelectTrigger id="client_state">
+                      <SelectValue placeholder="Select state" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Maharashtra">Maharashtra</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="sm:col-span-1">
+                  <Label htmlFor="client_phone">Client Phone</Label>
+                  <Input
+                    id="client_phone"
+                    name="client_phone"
+                    value={orderData.client_phone}
+                    onChange={handleOrderChange}
+                    required
+                  />
+                </div>
+
+                <div className="sm:col-span-1">
+                  <Label htmlFor="client_gst">Client GST Number</Label>
+                  <Input
+                    id="client_gst"
+                    name="client_gst"
+                    value={orderData.client_gst || ''}
+                    onChange={handleOrderChange}
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <Label htmlFor="client_address">Client Address</Label>
+                  <Input
+                    id="client_address"
+                    name="client_address"
+                    value={orderData.client_address}
+                    onChange={handleOrderChange}
+                    required
+                  />
+                </div>
+
+                <div className="sm:col-span-2 flex items-center space-x-2">
+                  <Switch
+                    checked={orderData.is_reverse_charge}
+                    onCheckedChange={handleSwitchChange}
+                    id="is_reverse_charge"
+                  />
+                  <Label htmlFor="is_reverse_charge">Reverse Charge</Label>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="client_phone">Client Phone</Label>
-              <Input
-                id="client_phone"
-                name="client_phone"
-                value={orderData.client_phone}
-                onChange={handleOrderChange}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="client_gst">GST Number</Label>
-              <Input
-                id="client_gst"
-                name="client_gst"
-                value={orderData.client_gst}
-                onChange={handleOrderChange}
-              />
-            </div>
-
-            <div className="space-y-2 sm:col-span-2 lg:col-span-3">
-              <Label htmlFor="client_address">Client Address</Label>
-              <Input
-                id="client_address"
-                name="client_address"
-                value={orderData.client_address}
-                onChange={handleOrderChange}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="client_state">State</Label>
-              <Select
-                value={orderData.client_state}
-                onValueChange={(value) => handleStateChange(value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Maharashtra">Maharashtra</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="state_code">State Code</Label>
-              <Input
-                id="state_code"
-                name="state_code"
-                value={orderData.state_code}
-                onChange={handleOrderChange}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="vehicle_no">Vehicle Number</Label>
-              <Input
-                id="vehicle_no"
-                name="vehicle_no"
-                value={orderData.vehicle_no}
-                onChange={handleOrderChange}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Add Items</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label>Product</Label>
-              <Select
-                value={currentItem.product_id.toString()}
-                onValueChange={handleProductSelect}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select product" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0" disabled>Select a product</SelectItem>
-                  {inventory.map((item) => (
-                    <SelectItem 
-                      key={item.product_id} 
-                      value={item.product_id?.toString() || "0"}
-                      disabled={item.boxes_on_hand === 0}
+            {/* Right Column - Product Selection and Cart */}
+            <div className="space-y-6">
+              {/* Product Selection */}
+              <div className="bg-gray-50 p-4 rounded-lg border">
+                <h3 className="text-lg font-medium mb-4">Add Items</h3>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="product">Product</Label>
+                    <Select
+                      value={currentItem.product_id.toString()}
+                      onValueChange={handleProductSelect}
                     >
-                      {item.brand} ({item.tile_width}x{item.tile_height}ft) - {item.boxes_on_hand} boxes left
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                      <SelectTrigger id="product">
+                        <SelectValue placeholder="Select a product" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0" disabled>Select a product</SelectItem>
+                        {inventory.map((item) => (
+                          <SelectItem 
+                            key={item.product_id} 
+                            value={item.product_id?.toString() || "0"}
+                            disabled={item.boxes_on_hand === 0}
+                          >
+                            {item.brand} ({item.tile_width}x{item.tile_height}ft) - {item.boxes_on_hand} boxes left
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="boxes_sold">Boxes</Label>
-              <Input
-                id="boxes_sold"
-                name="boxes_sold"
-                type="number"
-                min="1"
-                value={currentItem.boxes_sold}
-                onChange={handleItemChange}
-              />
-            </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="boxes_sold">Quantity (Boxes)</Label>
+                      <Input
+                        id="boxes_sold"
+                        name="boxes_sold"
+                        type="number"
+                        value={currentItem.boxes_sold}
+                        onChange={handleItemChange}
+                        min="1"
+                        className="number-input"
+                      />
+                    </div>
+                  </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="price_per_box">Price Per Box (Optional)</Label>
-              <Input
-                id="price_per_box"
-                name="price_per_box"
-                type="number"
-                min="0"
-                step="0.01"
-                value={currentItem.price_per_box || ''}
-                onChange={handleItemChange}
-              />
-            </div>
+                  <div className="col-span-full flex items-center gap-4">
+                    <label className="text-sm font-medium">Price Mode:</label>
+                    <button
+                      type="button"
+                      className={`px-2 py-1 rounded border ${currentItem.usePricePerBox ? '' : 'bg-blue-100 border-blue-400'}`}
+                      onClick={() => setCurrentItem((prev) => ({ ...prev, usePricePerBox: false }))}
+                    >
+                      Per Sqft
+                    </button>
+                    <button
+                      type="button"
+                      className={`px-2 py-1 rounded border ${currentItem.usePricePerBox ? 'bg-blue-100 border-blue-400' : ''}`}
+                      onClick={() => setCurrentItem((prev) => ({ ...prev, usePricePerBox: true }))}
+                    >
+                      Per Box
+                    </button>
+                  </div>
+                  {currentItem.usePricePerBox ? (
+                    <div className="col-span-full">
+                      <Label htmlFor="price_per_box">Price per Box</Label>
+                      <Input
+                        id="price_per_box"
+                        type="number"
+                        min={0}
+                        value={currentItem.price_per_box || ''}
+                        onChange={e => {
+                          const price_per_box = parseFloat(e.target.value) || 0;
+                          // Calculate price per sqft based on selected product
+                          const product = inventory.find(item => item.product_id === currentItem.product_id);
+                          let price_per_sqft = 0;
+                          if (product) {
+                            const sqftPerBox = calculateSquareFeet(product.tile_width, product.tile_height, product.tiles_per_box);
+                            price_per_sqft = sqftPerBox > 0 ? price_per_box / sqftPerBox : 0;
+                          }
+                          setCurrentItem(prev => ({ ...prev, price_per_box, price_per_sqft }));
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="col-span-full">
+                      <Label htmlFor="price_per_sqft">Price per Sqft</Label>
+                      <Input
+                        id="price_per_sqft"
+                        type="number"
+                        min={0}
+                        value={currentItem.price_per_sqft || ''}
+                        onChange={e => setCurrentItem(prev => ({ ...prev, price_per_sqft: parseFloat(e.target.value) || 0 }))}
+                      />
+                    </div>
+                  )}
 
-            <div className="flex items-end">
-              <Button
-                type="button"
-                onClick={addToCart}
-                className="w-full"
-              >
-                Add to Cart
-              </Button>
+                  <Button 
+                    type="button" 
+                    onClick={addToCart}
+                    disabled={currentItem.product_id === 0}
+                    className="w-full"
+                  >
+                    Add to Cart
+                  </Button>
+                </div>
+              </div>
+
+              {/* Cart */}
+              <div className="bg-gray-50 rounded-lg border">
+                <div className="p-4 border-b">
+                  <h3 className="text-lg font-medium">Cart ({cart.length} items)</h3>
+                </div>
+                
+                {cart.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Product
+                          </th>
+                          <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Boxes
+                          </th>
+                          <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Price
+                          </th>
+                          <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Total
+                          </th>
+                          <th scope="col" className="relative px-4 py-3">
+                            <span className="sr-only">Actions</span>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {cart.map((item, index) => (
+                          <tr key={index}>
+                            <td className="px-4 py-2 whitespace-nowrap">
+                              <div className="text-sm font-medium text-gray-900">{item.brand}</div>
+                              <div className="text-xs text-gray-500">{item.total_sqft.toFixed(2)} sq.ft.</div>
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{item.boxes_sold}</div>
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap">
+                              {item.usePricePerBox ? (
+                                <div className="text-sm text-gray-900">₹{formatCurrency(item.price_per_box)}/box</div>
+                              ) : (
+                                <div className="text-sm text-gray-900">₹{formatCurrency(item.price_per_sqft)}/sq.ft.</div>
+                              )}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{formatCurrency(item.total_price)}</div>
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
+                              <button
+                                onClick={() => removeFromCart(index)}
+                                className="text-red-600 hover:text-red-900"
+                              >
+                                Remove
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">No items in cart</p>
+                  </div>
+                )}
+
+                {cart.length > 0 && (
+                  <div className="border-t">
+                    <div className="p-4 space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Total Boxes:</span>
+                        <span className="font-medium">{totalBoxes}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>Total Area:</span>
+                        <span className="font-medium">{totalSqft.toFixed(2)} sq.ft.</span>
+                      </div>
+                      <div className="flex justify-between text-base font-medium pt-2 border-t">
+                        <span>Subtotal:</span>
+                        <span>{formatCurrency(subtotal)}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
+          </div>
+
+          {/* Order Summary */}
+          <div className="bg-gray-50 p-4 rounded-lg border">
+            <h3 className="text-lg font-medium mb-4">Order Summary</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <div>
+                <p className="text-sm text-gray-600">Total Boxes</p>
+                <p className="font-medium">{totalBoxes}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Total Square Feet</p>
+                <p className="font-medium">{totalSqft.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Subtotal</p>
+                <p className="font-medium">{formatCurrency(subtotal)}</p>
+              </div>
+              
+              {orderData.order_type === 'tax_invoice' && (
+                <>
+                  {gstAmounts.gst_type === 'igst' ? (
+                    <div>
+                      <p className="text-sm text-gray-600">IGST (18%)</p>
+                      <p className="font-medium">{formatCurrency(gstAmounts.igst_amount)}</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div>
+                        <p className="text-sm text-gray-600">CGST (9%)</p>
+                        <p className="font-medium">{formatCurrency(gstAmounts.cgst_amount)}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">SGST (9%)</p>
+                        <p className="font-medium">{formatCurrency(gstAmounts.sgst_amount)}</p>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+              
+              <div className="sm:col-span-2 md:col-span-3">
+                <p className="text-sm text-gray-600">Total Amount</p>
+                <p className="text-lg font-bold">{formatCurrency(gstAmounts.total)}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-4">
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                orderData.order_type === 'quotation' ? 'Create Quotation' : 'Create Invoice'
+              )}
+            </Button>
           </div>
         </div>
 
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Cart</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[600px] border-collapse">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Product
-                  </th>
-                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Boxes
-                  </th>
-                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Price
-                  </th>
-                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total
-                  </th>
-                  <th scope="col" className="relative px-4 py-3">
-                    <span className="sr-only">Actions</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {cart.map((item, index) => (
-                  <tr key={index}>
-                    <td className="px-4 py-2 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{item.brand}</div>
-                      <div className="text-xs text-gray-500">{item.total_sqft.toFixed(2)} sq.ft.</div>
-                    </td>
-                    <td className="px-4 py-2 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{item.boxes_sold}</div>
-                    </td>
-                    <td className="px-4 py-2 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">₹{formatCurrency(item.price_per_sqft * item.sqft_per_box)}/box</div>
-                      <div className="text-xs text-gray-500">₹{formatCurrency(item.price_per_sqft)}/sq.ft.</div>
-                    </td>
-                    <td className="px-4 py-2 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{formatCurrency(item.total_price)}</div>
-                    </td>
-                    <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={() => removeFromCart(index)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        Remove
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {loading && (
+          <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-        </div>
-
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Order Summary</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label>Order Type</Label>
-              <Select
-                value={orderData.order_type}
-                onValueChange={handleOrderTypeChange}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="quotation">Quotation</SelectItem>
-                  <SelectItem value="tax_invoice">Tax Invoice</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>GST Type</Label>
-              <Select
-                value={orderData.gst_type}
-                onValueChange={(value) => {
-                  const event = {
-                    target: {
-                      name: 'gst_type',
-                      value
-                    }
-                  } as React.ChangeEvent<HTMLSelectElement>;
-                  handleOrderChange(event);
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  <SelectItem value="igst">IGST</SelectItem>
-                  <SelectItem value="cgst_sgst">CGST + SGST</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="is_reverse_charge"
-                checked={orderData.is_reverse_charge}
-                onCheckedChange={handleSwitchChange}
-              />
-              <Label htmlFor="is_reverse_charge">Reverse Charge</Label>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-4 justify-end mt-6">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            disabled={loading}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            disabled={loading || cart.length === 0}
-          >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processing
-              </>
-            ) : (
-              `Create ${orderData.order_type === 'quotation' ? 'Quotation' : 'Tax Invoice'}`
-            )}
-          </Button>
-        </div>
+        )}
       </form>
-
-      {loading && (
-        <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      )}
     </div>
   );
 }

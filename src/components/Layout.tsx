@@ -7,6 +7,7 @@ import {
   FileText,
   BarChart3,
   LogOut,
+  Calculator,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -38,6 +39,11 @@ export default function Layout({ children }: LayoutProps) {
       name: "Reports",
       href: "/reports",
       icon: BarChart3,
+    },
+    {
+      name: "Price Calculator",
+      href: "/price-calculator",
+      icon: Calculator,
     },
   ];
 

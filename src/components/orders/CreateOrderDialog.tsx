@@ -2,7 +2,8 @@ import React from "react";
 import { 
   Dialog, 
   DialogContent,
-  DialogTrigger
+  DialogTrigger,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -29,14 +30,15 @@ const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({
           <Plus className="mr-2 h-4 w-4" /> New Order
         </Button>
       </DialogTrigger>
-      <DialogContent className="w-[95vw] sm:w-[90vw] md:max-w-[1200px] h-[95vh] sm:h-[90vh] p-3 sm:p-6 overflow-hidden flex flex-col">
-        <div className="flex-1 overflow-y-auto pr-2">
-          <OrderForm 
-            inventory={inventory} 
-            onSubmit={onSubmit} 
-            onCancel={() => setIsOpen(false)} 
-          />
-        </div>
+      <DialogContent className="max-w-[90vw] w-[1200px] max-h-[90vh] p-6 overflow-y-auto">
+        <DialogDescription>
+          Fill out the order form to create a new tax invoice. All fields marked with * are required.
+        </DialogDescription>
+        <OrderForm 
+          inventory={inventory} 
+          onSubmit={onSubmit} 
+          onCancel={() => setIsOpen(false)} 
+        />
       </DialogContent>
     </Dialog>
   );

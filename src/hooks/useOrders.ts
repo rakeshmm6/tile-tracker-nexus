@@ -59,7 +59,8 @@ export function useOrders() {
           cgst_rate: order.cgst_rate,
           cgst_amount: order.cgst_amount,
           sgst_rate: order.sgst_rate,
-          sgst_amount: order.sgst_amount
+          sgst_amount: order.sgst_amount,
+          total_amount: order.total_amount
         }])
         .select()
         .single();
@@ -79,6 +80,17 @@ export function useOrders() {
         .insert(orderItems);
 
       if (itemsError) throw itemsError;
+
+      // Atomically decrement inventory for each item, only for tax_invoice
+      if (order.order_type === 'tax_invoice') {
+        for (const item of items) {
+          const { error: rpcError } = await supabase.rpc('decrement_boxes_on_hand', {
+            p_product_id: item.product_id,
+            p_boxes_sold: item.boxes_sold
+          });
+          if (rpcError) throw rpcError;
+        }
+      }
 
       // Calculate total amount
       const total_amount = (order.subtotal || 0) + 
