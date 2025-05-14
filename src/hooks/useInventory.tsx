@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/sonner";
 import { 
@@ -120,6 +119,9 @@ export const useInventory = () => {
       : handleAddItem(item);
   };
 
+  // Add a refresh function
+  const refresh = fetchInventory;
+
   return {
     inventory,
     searchQuery,
@@ -141,5 +143,6 @@ export const useInventory = () => {
     handleFormSubmit,
     handleDeleteItem,
     paginate,
+    refresh,
   };
 };

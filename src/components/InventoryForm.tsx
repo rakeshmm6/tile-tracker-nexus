@@ -29,6 +29,7 @@ export default function InventoryForm({
       tiles_per_box: 0,
       boxes_on_hand: 0,
       price_per_sqft: 0,
+      hsn_code: "",
     }
   );
   const [widthUnit, setWidthUnit] = React.useState<'ft' | 'mm' | 'inch'>(initialData?.tile_width_unit || 'ft');
@@ -48,7 +49,7 @@ export default function InventoryForm({
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === "brand" ? value : name === "product_name" ? value : Number(value),
+      [name]: name === "brand" ? value : name === "product_name" ? value : name === "hsn_code" ? value : Number(value),
     }));
   };
 
@@ -83,6 +84,11 @@ export default function InventoryForm({
       return;
     }
     
+    if (!formData.hsn_code.trim()) {
+      toast.error("Please enter an HSN code");
+      return;
+    }
+    
     // Convert to feet for calculations
     const widthInFeet = toFeet(formData.tile_width_value, widthUnit);
     const heightInFeet = toFeet(formData.tile_height_value, heightUnit);
@@ -94,6 +100,7 @@ export default function InventoryForm({
       tile_width_unit: widthUnit,
       tile_height_value: formData.tile_height_value,
       tile_height_unit: heightUnit,
+      hsn_code: formData.hsn_code,
     });
   };
 
@@ -119,6 +126,18 @@ export default function InventoryForm({
           value={formData.product_name}
           onChange={handleChange}
           placeholder="e.g. Elite Glossy White"
+          required
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="hsn_code">HSN Code</Label>
+        <Input
+          id="hsn_code"
+          name="hsn_code"
+          value={formData.hsn_code}
+          onChange={handleChange}
+          placeholder="e.g. 6908"
           required
         />
       </div>

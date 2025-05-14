@@ -11,6 +11,7 @@ export interface InventoryItem {
   tiles_per_box: number;
   boxes_on_hand: number;
   price_per_sqft: number;
+  hsn_code: string;
 }
 
 export interface Order {

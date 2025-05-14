@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import Layout from "@/components/Layout";
@@ -56,13 +55,14 @@ const Dashboard = () => {
         description="Overview of your business performance"
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 gap-y-6 mb-8">
         <StatCard
           title="Total Inventory Value"
           value={formatCurrency(stats.inventory_value)}
           description="Current stock value"
           icon="money"
           trend={5.2}
+          className="p-4 sm:p-6"
         />
         <StatCard
           title="Boxes in Stock"
@@ -70,6 +70,7 @@ const Dashboard = () => {
           description="Across all products"
           icon="boxes"
           trend={-2.3}
+          className="p-4 sm:p-6"
         />
         <StatCard
           title="Total Orders"
@@ -77,6 +78,7 @@ const Dashboard = () => {
           description="Lifetime orders"
           icon="orders"
           trend={8.1}
+          className="p-4 sm:p-6"
         />
         <StatCard
           title="Sales Revenue"
@@ -84,11 +86,12 @@ const Dashboard = () => {
           description="Total sales"
           icon="sales"
           trend={12.5}
+          className="p-4 sm:p-6"
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white p-6 rounded-lg border shadow-sm">
+      <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 gap-y-6">
+        <div className="lg:col-span-2 bg-white p-4 sm:p-6 rounded-lg border shadow-sm">
           <h2 className="text-lg font-medium mb-4">Monthly Revenue</h2>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
@@ -122,7 +125,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border shadow-sm">
+        <div className="bg-white p-4 sm:p-6 rounded-lg border shadow-sm">
           <h2 className="text-lg font-medium mb-4">Product Performance</h2>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
@@ -153,7 +156,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="mt-6 bg-white p-6 rounded-lg border shadow-sm">
+      <div className="mt-6 bg-white p-4 sm:p-6 rounded-lg border shadow-sm w-full">
         <h2 className="text-lg font-medium mb-4">Recent Activity</h2>
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (

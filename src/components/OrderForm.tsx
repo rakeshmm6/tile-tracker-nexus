@@ -16,6 +16,13 @@ import { CartItem, InventoryItem, Order, OrderItem } from "@/lib/types";
 import { calculateSquareFeet } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { X } from "lucide-react";
+import {
+  Command,
+  CommandInput,
+  CommandList,
+  CommandItem,
+  CommandEmpty,
+} from "@/components/ui/command";
 
 interface OrderFormProps {
   inventory: InventoryItem[];
@@ -63,6 +70,9 @@ export default function OrderForm({
   });
 
   const [cart, setCart] = React.useState<CartItem[]>([]);
+
+  // Add state to track CommandInput value
+  const [productQuery, setProductQuery] = React.useState("");
 
   const handleOrderChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -140,12 +150,12 @@ export default function OrderForm({
       ...prev,
       {
         product_id: currentItem.product_id,
-        brand: product.brand,
-        boxes_sold: currentItem.boxes_sold,
+      brand: product.brand,
+      boxes_sold: currentItem.boxes_sold,
         price_per_sqft,
         price_per_box,
         usePricePerBox: currentItem.usePricePerBox,
-        sqft_per_box: sqftPerBox,
+      sqft_per_box: sqftPerBox,
         total_sqft,
         total_price,
         product_details: product,
@@ -223,16 +233,16 @@ export default function OrderForm({
     e.preventDefault();
     
     try {
-      // Basic validation
-      if (!orderData.client_name.trim()) {
-        toast.error("Please enter client name");
-        return;
-      }
-      
-      if (!orderData.client_phone.trim()) {
-        toast.error("Please enter client phone number");
-        return;
-      }
+    // Basic validation
+    if (!orderData.client_name.trim()) {
+      toast.error("Please enter client name");
+      return;
+    }
+    
+    if (!orderData.client_phone.trim()) {
+      toast.error("Please enter client phone number");
+      return;
+    }
       
       if (!orderData.client_address.trim()) {
         toast.error("Please enter client address");
@@ -243,25 +253,25 @@ export default function OrderForm({
         toast.error("Please select client state");
         return;
       }
-      
-      if (cart.length === 0) {
-        toast.error("Please add at least one item to the cart");
-        return;
-      }
+    
+    if (cart.length === 0) {
+      toast.error("Please add at least one item to the cart");
+      return;
+    }
 
       // Calculate subtotal
       const subtotal = cart.reduce((sum, item) => sum + item.total_price, 0);
       
       // Calculate GST amounts
       const gstData = calculateGSTAmounts(subtotal);
-      
-      // Prepare order items for submission
-      const orderItems: OrderItem[] = cart.map((item) => ({
-        product_id: item.product_id,
-        boxes_sold: item.boxes_sold,
-        price_per_sqft: item.price_per_sqft,
-      }));
-      
+    
+    // Prepare order items for submission
+    const orderItems: OrderItem[] = cart.map((item) => ({
+      product_id: item.product_id,
+      boxes_sold: item.boxes_sold,
+      price_per_sqft: item.price_per_sqft,
+    }));
+    
       // Create the complete order object with all required fields
       const finalOrder: Order = {
         ...orderData,
@@ -334,15 +344,15 @@ export default function OrderForm({
                 </div>
 
                 <div className="sm:col-span-2">
-                  <Label htmlFor="client_name">Client Name</Label>
-                  <Input
-                    id="client_name"
-                    name="client_name"
-                    value={orderData.client_name}
-                    onChange={handleOrderChange}
-                    required
-                  />
-                </div>
+                <Label htmlFor="client_name">Client Name</Label>
+                <Input
+                  id="client_name"
+                  name="client_name"
+                  value={orderData.client_name}
+                  onChange={handleOrderChange}
+                  required
+                />
+              </div>
 
                 <div className="sm:col-span-2">
                   <Label htmlFor="client_state">State</Label>
@@ -359,14 +369,14 @@ export default function OrderForm({
 
                 <div className="sm:col-span-1">
                   <Label htmlFor="client_phone">Client Phone</Label>
-                  <Input
-                    id="client_phone"
-                    name="client_phone"
-                    value={orderData.client_phone}
-                    onChange={handleOrderChange}
-                    required
-                  />
-                </div>
+                <Input
+                  id="client_phone"
+                  name="client_phone"
+                  value={orderData.client_phone}
+                  onChange={handleOrderChange}
+                  required
+                />
+              </div>
 
                 <div className="sm:col-span-1">
                   <Label htmlFor="client_gst">Client GST Number</Label>
@@ -376,27 +386,27 @@ export default function OrderForm({
                     value={orderData.client_gst || ''}
                     onChange={handleOrderChange}
                   />
-                </div>
+            </div>
 
                 <div className="sm:col-span-2">
                   <Label htmlFor="client_address">Client Address</Label>
-                  <Input
-                    id="client_address"
-                    name="client_address"
-                    value={orderData.client_address}
-                    onChange={handleOrderChange}
-                    required
-                  />
-                </div>
+              <Input
+                id="client_address"
+                name="client_address"
+                value={orderData.client_address}
+                onChange={handleOrderChange}
+                required
+              />
+            </div>
 
                 <div className="sm:col-span-2 flex items-center space-x-2">
                   <Switch
                     checked={orderData.is_reverse_charge}
                     onCheckedChange={handleSwitchChange}
                     id="is_reverse_charge"
-                  />
+                />
                   <Label htmlFor="is_reverse_charge">Reverse Charge</Label>
-                </div>
+              </div>
               </div>
             </div>
 
@@ -406,43 +416,56 @@ export default function OrderForm({
               <div className="bg-gray-50 p-4 rounded-lg border">
                 <h3 className="text-lg font-medium mb-4">Add Items</h3>
                 <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="product">Product</Label>
-                    <Select
-                      value={currentItem.product_id.toString()}
-                      onValueChange={handleProductSelect}
-                    >
-                      <SelectTrigger id="product">
-                        <SelectValue placeholder="Select a product" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="0" disabled>Select a product</SelectItem>
-                        {inventory.map((item) => (
-                          <SelectItem 
-                            key={item.product_id} 
-                            value={item.product_id?.toString() || "0"}
+        <div>
+              <Label htmlFor="product">Product</Label>
+              <Command>
+                <CommandInput
+                  placeholder="Type product name or brand..."
+                  value={productQuery}
+                  onValueChange={setProductQuery}
+                />
+                <CommandList>
+                  {productQuery ? (
+                    <>
+                      {inventory.filter(item =>
+                        item.product_name.toLowerCase().includes(productQuery.toLowerCase()) ||
+                        item.brand.toLowerCase().includes(productQuery.toLowerCase())
+                      ).length === 0 ? (
+                        <CommandEmpty>No products found.</CommandEmpty>
+                      ) : (
+                        inventory.filter(item =>
+                          item.product_name.toLowerCase().includes(productQuery.toLowerCase()) ||
+                          item.brand.toLowerCase().includes(productQuery.toLowerCase())
+                        ).map(item => (
+                          <CommandItem
+                            key={item.product_id}
+                            value={`${item.brand} - ${item.product_name}`}
+                            onSelect={() => handleProductSelect(item.product_id.toString())}
                             disabled={item.boxes_on_hand === 0}
                           >
-                            {item.brand} ({item.tile_width}x{item.tile_height}ft) - {item.boxes_on_hand} boxes left
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                            {item.brand} - {item.product_name} ({item.tile_width}x{item.tile_height}ft) - {item.boxes_on_hand} boxes left
+                          </CommandItem>
+                        ))
+                      )}
+                    </>
+                  ) : null}
+                </CommandList>
+              </Command>
+            </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="boxes_sold">Quantity (Boxes)</Label>
-                      <Input
-                        id="boxes_sold"
-                        name="boxes_sold"
-                        type="number"
-                        value={currentItem.boxes_sold}
-                        onChange={handleItemChange}
-                        min="1"
-                        className="number-input"
-                      />
-                    </div>
+              <Label htmlFor="boxes_sold">Quantity (Boxes)</Label>
+              <Input
+                id="boxes_sold"
+                name="boxes_sold"
+                type="number"
+                value={currentItem.boxes_sold}
+                onChange={handleItemChange}
+                min="1"
+                className="number-input"
+              />
+            </div>
                   </div>
 
                   <div className="col-span-full flex items-center gap-4">
@@ -496,15 +519,15 @@ export default function OrderForm({
                     </div>
                   )}
 
-                  <Button 
-                    type="button" 
-                    onClick={addToCart}
-                    disabled={currentItem.product_id === 0}
-                    className="w-full"
-                  >
-                    Add to Cart
-                  </Button>
-                </div>
+            <Button 
+              type="button" 
+              onClick={addToCart}
+              disabled={currentItem.product_id === 0}
+              className="w-full"
+            >
+              Add to Cart
+            </Button>
+          </div>
               </div>
 
               {/* Cart */}
@@ -513,88 +536,88 @@ export default function OrderForm({
                   <h3 className="text-lg font-medium">Cart ({cart.length} items)</h3>
                 </div>
                 
-                {cart.length > 0 ? (
+            {cart.length > 0 ? (
                   <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Product
-                          </th>
-                          <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Boxes
-                          </th>
-                          <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Price
-                          </th>
-                          <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Total
-                          </th>
-                          <th scope="col" className="relative px-4 py-3">
-                            <span className="sr-only">Actions</span>
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {cart.map((item, index) => (
-                          <tr key={index}>
-                            <td className="px-4 py-2 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900">{item.brand}</div>
-                              <div className="text-xs text-gray-500">{item.total_sqft.toFixed(2)} sq.ft.</div>
-                            </td>
-                            <td className="px-4 py-2 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">{item.boxes_sold}</div>
-                            </td>
-                            <td className="px-4 py-2 whitespace-nowrap">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Product
+                      </th>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Boxes
+                      </th>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Price
+                      </th>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Total
+                      </th>
+                      <th scope="col" className="relative px-4 py-3">
+                        <span className="sr-only">Actions</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {cart.map((item, index) => (
+                      <tr key={index}>
+                        <td className="px-4 py-2 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{item.brand}</div>
+                          <div className="text-xs text-gray-500">{item.total_sqft.toFixed(2)} sq.ft.</div>
+                        </td>
+                        <td className="px-4 py-2 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{item.boxes_sold}</div>
+                        </td>
+                        <td className="px-4 py-2 whitespace-nowrap">
                               {item.usePricePerBox ? (
                                 <div className="text-sm text-gray-900">₹{formatCurrency(item.price_per_box)}/box</div>
                               ) : (
                                 <div className="text-sm text-gray-900">₹{formatCurrency(item.price_per_sqft)}/sq.ft.</div>
                               )}
-                            </td>
-                            <td className="px-4 py-2 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">{formatCurrency(item.total_price)}</div>
-                            </td>
-                            <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
-                              <button
-                                onClick={() => removeFromCart(index)}
-                                className="text-red-600 hover:text-red-900"
-                              >
-                                Remove
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
+                        </td>
+                        <td className="px-4 py-2 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{formatCurrency(item.total_price)}</div>
+                        </td>
+                        <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
+                          <button
+                            onClick={() => removeFromCart(index)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            Remove
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
                   <div className="text-center py-8">
-                    <p className="text-gray-500">No items in cart</p>
-                  </div>
-                )}
+                <p className="text-gray-500">No items in cart</p>
+              </div>
+            )}
 
-                {cart.length > 0 && (
+            {cart.length > 0 && (
                   <div className="border-t">
                     <div className="p-4 space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span>Total Boxes:</span>
-                        <span className="font-medium">{totalBoxes}</span>
-                      </div>
+                  <span>Total Boxes:</span>
+                  <span className="font-medium">{totalBoxes}</span>
+                </div>
                       <div className="flex justify-between text-sm">
-                        <span>Total Area:</span>
-                        <span className="font-medium">{totalSqft.toFixed(2)} sq.ft.</span>
-                      </div>
+                  <span>Total Area:</span>
+                  <span className="font-medium">{totalSqft.toFixed(2)} sq.ft.</span>
+                </div>
                       <div className="flex justify-between text-base font-medium pt-2 border-t">
-                        <span>Subtotal:</span>
-                        <span>{formatCurrency(subtotal)}</span>
+                  <span>Subtotal:</span>
+                  <span>{formatCurrency(subtotal)}</span>
                       </div>
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
+        </div>
+      </div>
 
           {/* Order Summary */}
           <div className="bg-gray-50 p-4 rounded-lg border">
@@ -644,9 +667,9 @@ export default function OrderForm({
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-4">
-            <Button type="button" variant="outline" onClick={onCancel}>
-              Cancel
-            </Button>
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
             <Button type="submit" disabled={loading}>
               {loading ? (
                 <>
@@ -656,8 +679,8 @@ export default function OrderForm({
               ) : (
                 orderData.order_type === 'quotation' ? 'Create Quotation' : 'Create Invoice'
               )}
-            </Button>
-          </div>
+        </Button>
+      </div>
         </div>
 
         {loading && (

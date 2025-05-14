@@ -240,6 +240,7 @@ const OrderDetails = () => {
             <thead className="text-xs uppercase bg-gray-50">
               <tr>
                 <th scope="col" className="px-6 py-3">Product</th>
+                <th scope="col" className="px-6 py-3">HSN Code</th>
                 <th scope="col" className="px-6 py-3">Size (mm)</th>
                 <th scope="col" className="px-6 py-3">Boxes</th>
                 <th scope="col" className="px-6 py-3">Sqft/Box</th>
@@ -252,6 +253,7 @@ const OrderDetails = () => {
               {enhancedItems.map((item, index) => (
                 <tr key={index} className="border-b">
                   <td className="px-6 py-4 font-medium">{item.brand || `Product ${item.product_id}`}</td>
+                  <td className="px-6 py-4">{inventoryMap[item.product_id]?.hsn_code || ""}</td>
                   <td className="px-6 py-4">{item.size || "N/A"}</td>
                   <td className="px-6 py-4">{item.boxes_sold}</td>
                   <td className="px-6 py-4">{item.sqftPerBox?.toFixed(2) || "N/A"}</td>
@@ -270,41 +272,37 @@ const OrderDetails = () => {
               <span className="text-gray-600">Subtotal:</span>
               <span>{formatCurrency(subtotal)}</span>
             </div>
-            
-            <div className={cn("flex justify-between", taxes.cgst === 0 && taxes.sgst === 0 && "hidden")}>
-              <span className="text-gray-600">CGST (9%):</span>
-              <span>{formatCurrency(taxes.cgst)}</span>
-            </div>
-            
-            <div className={cn("flex justify-between", taxes.cgst === 0 && taxes.sgst === 0 && "hidden")}>
-              <span className="text-gray-600">SGST (9%):</span>
-              <span>{formatCurrency(taxes.sgst)}</span>
-            </div>
-            
-            <div className={cn("flex justify-between", taxes.igst === 0 && "hidden")}>
-              <span className="text-gray-600">IGST (18%):</span>
-              <span>{formatCurrency(taxes.igst)}</span>
-            </div>
-            
-            <div className={cn("flex justify-between", order.is_reverse_charge && "hidden")}>
-              <span className="text-gray-600">Total Tax:</span>
-              <span>{formatCurrency(taxes.totalTax)}</span>
-            </div>
-            
-            <div className={cn("flex justify-between", !order.is_reverse_charge && "hidden")}>
-              <span className="text-gray-600 italic">Reverse Charge Applicable</span>
-            </div>
-            
+            {order.order_type !== 'quotation' && (
+              <>
+                <div className={cn("flex justify-between", taxes.cgst === 0 && taxes.sgst === 0 && "hidden")}> 
+                  <span className="text-gray-600">CGST (9%):</span>
+                  <span>{formatCurrency(taxes.cgst)}</span>
+                </div>
+                <div className={cn("flex justify-between", taxes.cgst === 0 && taxes.sgst === 0 && "hidden")}> 
+                  <span className="text-gray-600">SGST (9%):</span>
+                  <span>{formatCurrency(taxes.sgst)}</span>
+                </div>
+                <div className={cn("flex justify-between", taxes.igst === 0 && "hidden")}> 
+                  <span className="text-gray-600">IGST (18%):</span>
+                  <span>{formatCurrency(taxes.igst)}</span>
+                </div>
+                <div className={cn("flex justify-between", order.is_reverse_charge && "hidden")}> 
+                  <span className="text-gray-600">Total Tax:</span>
+                  <span>{formatCurrency(taxes.totalTax)}</span>
+                </div>
+                <div className={cn("flex justify-between", !order.is_reverse_charge && "hidden")}> 
+                  <span className="text-gray-600 italic">Reverse Charge Applicable</span>
+                </div>
+              </>
+            )}
             <div className="flex justify-between pt-3 border-t font-semibold">
               <span>Total Amount:</span>
               <span>{formatCurrency(grandTotal)}</span>
             </div>
-            
             <div className="flex justify-between">
               <span className="text-gray-600">Total Boxes:</span>
               <span>{totalBoxes}</span>
             </div>
-            
             <div className="flex justify-between">
               <span className="text-gray-600">Total Area:</span>
               <span>{totalSqft.toFixed(2)} sq.ft.</span>

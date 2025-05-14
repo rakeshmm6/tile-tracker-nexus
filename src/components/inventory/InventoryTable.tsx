@@ -40,28 +40,29 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         <table className="w-full text-sm text-left">
           <thead className="text-xs uppercase bg-gray-50">
             <tr>
-              <th scope="col" className="px-6 py-3">Product ID</th>
-              <th scope="col" className="px-6 py-3">Brand</th>
-              <th scope="col" className="px-6 py-3">Product Name</th>
-              <th scope="col" className="px-6 py-3">Size (ft)</th>
-              <th scope="col" className="px-6 py-3">Tiles/Box</th>
-              <th scope="col" className="px-6 py-3">Sqft/Box</th>
-              <th scope="col" className="px-6 py-3">Price/Sqft</th>
-              <th scope="col" className="px-6 py-3">Boxes In Stock</th>
-              <th scope="col" className="px-6 py-3">Value</th>
-              {isAdmin() && <th scope="col" className="px-6 py-3">Actions</th>}
+              <th scope="col" className="px-2 py-2 sm:px-6 sm:py-3">Product ID</th>
+              <th scope="col" className="px-2 py-2 sm:px-6 sm:py-3">Brand</th>
+              <th scope="col" className="px-2 py-2 sm:px-6 sm:py-3">Product Name</th>
+              <th scope="col" className="px-2 py-2 sm:px-6 sm:py-3">HSN Code</th>
+              <th scope="col" className="px-2 py-2 sm:px-6 sm:py-3">Size (ft)</th>
+              <th scope="col" className="px-2 py-2 sm:px-6 sm:py-3">Tiles/Box</th>
+              <th scope="col" className="px-2 py-2 sm:px-6 sm:py-3">Sqft/Box</th>
+              <th scope="col" className="px-2 py-2 sm:px-6 sm:py-3">Price/Sqft</th>
+              <th scope="col" className="px-2 py-2 sm:px-6 sm:py-3">Boxes In Stock</th>
+              <th scope="col" className="px-2 py-2 sm:px-6 sm:py-3">Value</th>
+              {isAdmin() && <th scope="col" className="px-2 py-2 sm:px-6 sm:py-3">Actions</th>}
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={isAdmin() ? 9 : 8} className="px-6 py-4 text-center">
+                <td colSpan={isAdmin() ? 9 : 8} className="px-2 py-2 sm:px-6 sm:py-4 text-center">
                   Loading inventory data...
                 </td>
               </tr>
             ) : currentItems.length === 0 ? (
               <tr>
-                <td colSpan={isAdmin() ? 9 : 8} className="px-6 py-4 text-center">
+                <td colSpan={isAdmin() ? 9 : 8} className="px-2 py-2 sm:px-6 sm:py-4 text-center">
                   {searchQuery ? "No matching products found" : "No products found. Add some!"}
                 </td>
               </tr>
@@ -76,10 +77,11 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                 
                 return (
                   <tr key={item.product_id} className="border-b hover:bg-gray-50">
-                    <td className="px-6 py-4">{item.product_id}</td>
-                    <td className="px-6 py-4 font-medium">{item.brand}</td>
-                    <td className="px-6 py-4">{item.product_name}</td>
-                    <td className="px-6 py-4">{
+                    <td className="px-2 py-2 sm:px-6 sm:py-4">{item.product_id}</td>
+                    <td className="px-2 py-2 sm:px-6 sm:py-4 font-medium">{item.brand}</td>
+                    <td className="px-2 py-2 sm:px-6 sm:py-4">{item.product_name}</td>
+                    <td className="px-2 py-2 sm:px-6 sm:py-4">{item.hsn_code}</td>
+                    <td className="px-2 py-2 sm:px-6 sm:py-4">{
                       item.tile_width_value
                     } {
                       item.tile_width_unit === 'inch' ? 'in' : item.tile_width_unit
@@ -88,14 +90,14 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                     } {
                       item.tile_height_unit === 'inch' ? 'in' : item.tile_height_unit
                     }</td>
-                    <td className="px-6 py-4">{item.tiles_per_box}</td>
-                    <td className="px-6 py-4">{sqftPerBox.toFixed(2)}</td>
-                    <td className="px-6 py-4">₹{item.price_per_sqft}</td>
-                    <td className="px-6 py-4">{item.boxes_on_hand}</td>
-                    <td className="px-6 py-4">{formatCurrency(totalValue)}</td>
+                    <td className="px-2 py-2 sm:px-6 sm:py-4">{item.tiles_per_box}</td>
+                    <td className="px-2 py-2 sm:px-6 sm:py-4">{sqftPerBox.toFixed(2)}</td>
+                    <td className="px-2 py-2 sm:px-6 sm:py-4">₹{item.price_per_sqft}</td>
+                    <td className="px-2 py-2 sm:px-6 sm:py-4">{item.boxes_on_hand}</td>
+                    <td className="px-2 py-2 sm:px-6 sm:py-4">{formatCurrency(totalValue)}</td>
                     {isAdmin() && (
-                      <td className="px-6 py-4">
-                        <div className="flex space-x-2">
+                      <td className="px-2 py-2 sm:px-6 sm:py-4">
+                        <div className="flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-2">
                           <Button
                             size="sm"
                             variant="ghost"
@@ -124,7 +126,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="px-4 py-3 flex items-center justify-between border-t">
+        <div className="px-2 sm:px-4 py-3 flex flex-col sm:flex-row items-center justify-between border-t gap-2 sm:gap-0">
           <div className="text-sm text-gray-500">
             Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredInventory.length)} of {filteredInventory.length} items
           </div>

@@ -141,6 +141,125 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory_in: {
+        Row: {
+          id: number;
+          truck_number: string;
+          date: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          truck_number: string;
+          date: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: number;
+          truck_number?: string;
+          date?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      inventory_in_products: {
+        Row: {
+          id: number;
+          inventory_in_id: number;
+          product_id: number;
+          quantity: number;
+        };
+        Insert: {
+          id?: number;
+          inventory_in_id: number;
+          product_id: number;
+          quantity: number;
+        };
+        Update: {
+          id?: number;
+          inventory_in_id?: number;
+          product_id?: number;
+          quantity?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "inventory_in_products_inventory_in_id_fkey",
+            columns: ["inventory_in_id"],
+            isOneToOne: false,
+            referencedRelation: "inventory_in",
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_in_products_product_id_fkey",
+            columns: ["product_id"],
+            isOneToOne: false,
+            referencedRelation: "inventory",
+            referencedColumns: ["product_id"]
+          }
+        ];
+      };
+      ledger_entries: {
+        Row: {
+          id: number;
+          order_id: string | null;
+          client_name: string | null;
+          total_amount: number;
+          products: any | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          order_id?: string | null;
+          client_name?: string | null;
+          total_amount: number;
+          products?: any | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: number;
+          order_id?: string | null;
+          client_name?: string | null;
+          total_amount?: number;
+          products?: any | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      ledger_payments: {
+        Row: {
+          id: number;
+          ledger_entry_id: number;
+          payment_type: string;
+          amount: number;
+          payment_date: string;
+          note: string | null;
+        };
+        Insert: {
+          id?: number;
+          ledger_entry_id: number;
+          payment_type: string;
+          amount: number;
+          payment_date?: string;
+          note?: string | null;
+        };
+        Update: {
+          id?: number;
+          ledger_entry_id?: number;
+          payment_type?: string;
+          amount?: number;
+          payment_date?: string;
+          note?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ledger_payments_ledger_entry_id_fkey",
+            columns: ["ledger_entry_id"],
+            isOneToOne: false,
+            referencedRelation: "ledger_entries",
+            referencedColumns: ["id"]
+          }
+        ];
+      };
     }
     Views: {
       [_ in never]: never

@@ -4,6 +4,7 @@ import { calculateSquareFeet, formatCurrency } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Layout from "@/components/Layout";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 const PriceCalculator: React.FC = () => {
   const { inventory } = useInventory();

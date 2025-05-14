@@ -1,4 +1,3 @@
-
 import React from "react";
 import { 
   ArrowDownRight,
@@ -46,7 +45,7 @@ export default function StatCard({
 
   return (
     <div className={cn("bg-white p-6 rounded-lg border shadow-sm", className)}>
-      <div className="flex justify-between items-start">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <p className="text-gray-500 text-sm">{title}</p>
           <h3 className="text-2xl font-bold mt-1">{value}</h3>
