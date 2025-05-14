@@ -272,7 +272,7 @@ const OrderDetails = () => {
               <span className="text-gray-600">Subtotal:</span>
               <span>{formatCurrency(subtotal)}</span>
             </div>
-            {order.order_type !== 'quotation' && (
+            {order.order_type !== 'quotation' ? (
               <>
                 <div className={cn("flex justify-between", taxes.cgst === 0 && taxes.sgst === 0 && "hidden")}> 
                   <span className="text-gray-600">CGST (9%):</span>
@@ -293,12 +293,17 @@ const OrderDetails = () => {
                 <div className={cn("flex justify-between", !order.is_reverse_charge && "hidden")}> 
                   <span className="text-gray-600 italic">Reverse Charge Applicable</span>
                 </div>
+                <div className="flex justify-between pt-3 border-t font-semibold">
+                  <span>Total Amount:</span>
+                  <span>{formatCurrency(grandTotal)}</span>
+                </div>
               </>
+            ) : (
+              <div className="flex justify-between pt-3 border-t font-semibold">
+                <span>Total Amount:</span>
+                <span>{formatCurrency(subtotal)}</span>
+              </div>
             )}
-            <div className="flex justify-between pt-3 border-t font-semibold">
-              <span>Total Amount:</span>
-              <span>{formatCurrency(grandTotal)}</span>
-            </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Total Boxes:</span>
               <span>{totalBoxes}</span>

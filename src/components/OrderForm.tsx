@@ -74,6 +74,9 @@ export default function OrderForm({
   // Add state to track CommandInput value
   const [productQuery, setProductQuery] = React.useState("");
 
+  // Add state to control product list visibility
+  const [showProductList, setShowProductList] = React.useState(false);
+
   const handleOrderChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -106,6 +109,7 @@ export default function OrderForm({
       ...prev,
       product_id: Number(value),
     }));
+    setShowProductList(false); // Close the list after selection
   };
 
   const addToCart = () => {
@@ -307,6 +311,20 @@ export default function OrderForm({
   const subtotal = cart.reduce((sum, item) => sum + item.total_price, 0);
   const gstAmounts = calculateGSTAmounts(subtotal);
 
+  // Before the return statement in the component
+  const selectedProductDetails = (() => {
+    if (currentItem.product_id === 0) return null;
+    const selected = inventory.find(item => item.product_id === currentItem.product_id);
+    if (!selected) return null;
+    return (
+      <div className="mt-2 p-2 rounded border bg-gray-50 text-sm">
+        <div><span className="font-medium">{selected.brand}</span> - {selected.product_name}</div>
+        <div>Size: {selected.tile_width}x{selected.tile_height} ft, {selected.tiles_per_box} tiles/box</div>
+        <div>HSN: {selected.hsn_code} | In stock: {selected.boxes_on_hand} boxes</div>
+      </div>
+    );
+  })();
+
   return (
     <div className="min-h-full flex flex-col bg-white">
       <div className="sticky top-0 z-10 flex items-center justify-between p-4 border-b bg-white">
@@ -423,35 +441,41 @@ export default function OrderForm({
                   placeholder="Type product name or brand..."
                   value={productQuery}
                   onValueChange={setProductQuery}
+                  onFocus={() => setShowProductList(true)}
                 />
-                <CommandList>
-                  {productQuery ? (
-                    <>
-                      {inventory.filter(item =>
-                        item.product_name.toLowerCase().includes(productQuery.toLowerCase()) ||
-                        item.brand.toLowerCase().includes(productQuery.toLowerCase())
-                      ).length === 0 ? (
-                        <CommandEmpty>No products found.</CommandEmpty>
-                      ) : (
-                        inventory.filter(item =>
+                {showProductList && (
+                  <CommandList>
+                    {productQuery ? (
+                      <>
+                        {inventory.filter(item =>
                           item.product_name.toLowerCase().includes(productQuery.toLowerCase()) ||
                           item.brand.toLowerCase().includes(productQuery.toLowerCase())
-                        ).map(item => (
-                          <CommandItem
-                            key={item.product_id}
-                            value={`${item.brand} - ${item.product_name}`}
-                            onSelect={() => handleProductSelect(item.product_id.toString())}
-                            disabled={item.boxes_on_hand === 0}
-                          >
-                            {item.brand} - {item.product_name} ({item.tile_width}x{item.tile_height}ft) - {item.boxes_on_hand} boxes left
-                          </CommandItem>
-                        ))
-                      )}
-                    </>
-                  ) : null}
-                </CommandList>
+                        ).length === 0 ? (
+                          <CommandEmpty>No products found.</CommandEmpty>
+                        ) : (
+                          inventory.filter(item =>
+                            item.product_name.toLowerCase().includes(productQuery.toLowerCase()) ||
+                            item.brand.toLowerCase().includes(productQuery.toLowerCase())
+                          ).map(item => (
+                            <CommandItem
+                              key={item.product_id}
+                              value={`${item.brand} - ${item.product_name}`}
+                              onSelect={() => handleProductSelect(item.product_id.toString())}
+                              disabled={item.boxes_on_hand === 0}
+                            >
+                              {item.brand} - {item.product_name} ({item.tile_width}x{item.tile_height}ft) - {item.boxes_on_hand} boxes left
+                            </CommandItem>
+                          ))
+                        )}
+                      </>
+                    ) : null}
+                  </CommandList>
+                )}
               </Command>
             </div>
+
+                  {/* Show selected product details below the search input */}
+                  {selectedProductDetails}
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
@@ -635,8 +659,8 @@ export default function OrderForm({
                 <p className="text-sm text-gray-600">Subtotal</p>
                 <p className="font-medium">{formatCurrency(subtotal)}</p>
               </div>
-              
-              {orderData.order_type === 'tax_invoice' && (
+              {/* Only show GST and total if tax_invoice */}
+              {orderData.order_type === 'tax_invoice' ? (
                 <>
                   {gstAmounts.gst_type === 'igst' ? (
                     <div>
@@ -655,13 +679,17 @@ export default function OrderForm({
                       </div>
                     </>
                   )}
+                  <div className="sm:col-span-2 md:col-span-3">
+                    <p className="text-sm text-gray-600">Total Amount</p>
+                    <p className="text-lg font-bold">{formatCurrency(gstAmounts.total)}</p>
+                  </div>
                 </>
+              ) : (
+                <div className="sm:col-span-2 md:col-span-3">
+                  <p className="text-sm text-gray-600">Total Amount</p>
+                  <p className="text-lg font-bold">{formatCurrency(subtotal)}</p>
+                </div>
               )}
-              
-              <div className="sm:col-span-2 md:col-span-3">
-                <p className="text-sm text-gray-600">Total Amount</p>
-                <p className="text-lg font-bold">{formatCurrency(gstAmounts.total)}</p>
-              </div>
             </div>
           </div>
 
