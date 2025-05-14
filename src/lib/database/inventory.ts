@@ -48,13 +48,46 @@ export const updateInventoryItem = async (id: number, updates: Partial<Inventory
 };
 
 export const deleteInventoryItem = async (id: number): Promise<void> => {
+  // 1. Check if product is referenced in any tax invoice
+  const { data: orderItems, error: orderItemsError } = await supabase
+    .from('order_items')
+    .select('order_id')
+    .eq('product_id', id);
+
+  if (orderItemsError) {
+    console.error('Error checking order_items for product:', orderItemsError);
+    throw orderItemsError;
+  }
+
+  if (orderItems && orderItems.length > 0) {
+    // Get all order_ids
+    const orderIds = orderItems.map(item => item.order_id);
+    // Query orders for these ids
+    const { data: orders, error: ordersError } = await supabase
+      .from('orders')
+      .select('order_id, order_type')
+      .in('order_id', orderIds);
+    if (ordersError) {
+      console.error('Error checking orders for product:', ordersError);
+      throw ordersError;
+    }
+    // If any order_type is tax_invoice, block deletion
+    const referencedInTaxInvoice = orders?.some(order => order.order_type === 'tax_invoice');
+    if (referencedInTaxInvoice) {
+      const err = new Error('Cannot delete: Product is used in a tax invoice.');
+      (err as any).code = 'PRODUCT_IN_TAX_INVOICE';
+      throw err;
+    }
+  }
+
+  // 2. Proceed with deletion (even if referenced in quotations)
   const { error } = await supabase
-    .from("inventory")
+    .from('inventory')
     .delete()
-    .eq("product_id", id);
-  
+    .eq('product_id', id);
+
   if (error) {
-    console.error("Error deleting inventory item:", error);
+    console.error('Error deleting inventory item:', error);
     throw error;
   }
 };

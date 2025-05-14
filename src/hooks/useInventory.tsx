@@ -71,9 +71,13 @@ export const useInventory = () => {
       await deleteInventoryItem(itemToDelete);
       toast.success("Item deleted successfully");
       fetchInventory();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting item:", error);
-      toast.error("Failed to delete item");
+      if (error.code === 'PRODUCT_IN_TAX_INVOICE') {
+        toast.error("Cannot delete: Product is used in a tax invoice.");
+      } else {
+        toast.error("Failed to delete item");
+      }
     } finally {
       setIsDeleteDialogOpen(false);
       setItemToDelete(null);
