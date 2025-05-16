@@ -9,6 +9,8 @@ import { Order, OrderItem } from "@/lib/types";
 import { getOrder, getInventory } from "@/lib/database";
 import { formatDate, formatCurrency, calculateSquareFeet, calculateTaxBreakdown } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 // Define an interface for the enhanced order item with additional properties
 interface EnhancedOrderItem extends OrderItem {
@@ -64,15 +66,33 @@ const OrderDetails = () => {
     }
   };
 
-  const downloadInvoice = () => {
-    toast("Generating invoice...", {
-      description: "Your invoice will be downloaded shortly.",
-    });
-    
-    // In a real application, we'd make an API call here to generate the PDF
-    setTimeout(() => {
+  const downloadInvoice = async () => {
+    const invoiceElement = document.getElementById("invoice-content");
+    if (!invoiceElement) return;
+    // Add the A4 class
+    invoiceElement.classList.add("pdf-a4");
+    toast("Generating invoice PDF...");
+    try {
+      const canvas = await html2canvas(invoiceElement, { scale: 2 });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "pt",
+        format: "a4",
+      });
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Invoice-${order.order_id}.pdf`);
       toast.success("Invoice downloaded successfully");
-    }, 2000);
+    } catch (err) {
+      toast.error("Failed to generate PDF");
+      console.error("PDF generation error:", err);
+    } finally {
+      // Remove the A4 class after PDF is generated
+      invoiceElement.classList.remove("pdf-a4");
+    }
   };
 
   const printInvoice = () => {
@@ -172,145 +192,146 @@ const OrderDetails = () => {
         </div>
       </PageHeader>
 
-      <div className="bg-white shadow-sm rounded-lg border overflow-hidden mb-6">
-        <div className="grid md:grid-cols-2 gap-6 p-6">
-          <div>
-            <h3 className="font-semibold text-lg mb-4">Order Information</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between border-b pb-2">
-                <span className="text-gray-500">Order ID:</span>
-                <span className="font-medium">{order.order_id}</span>
-              </div>
-              <div className="flex justify-between border-b pb-2">
-                <span className="text-gray-500">Date:</span>
-                <span>{formatDate(order.order_date)}</span>
-              </div>
-              <div className="flex justify-between border-b pb-2">
-                <span className="text-gray-500">HSN Code:</span>
-                <span>{order.hsn_code}</span>
-              </div>
-              <div className="flex justify-between border-b pb-2">
-                <span className="text-gray-500">E-Way Bill:</span>
-                <span>{order.eway_bill || "N/A"}</span>
-              </div>
-              <div className="flex justify-between border-b pb-2">
-                <span className="text-gray-500">Vehicle No:</span>
-                <span>{order.vehicle_no || "N/A"}</span>
-              </div>
-              <div className="flex justify-between pb-2">
-                <span className="text-gray-500">Reverse Charge:</span>
-                <span>{order.is_reverse_charge ? "Yes" : "No"}</span>
+      {/* Wrap invoice content for PDF generation */}
+      <div id="invoice-content">
+        <div className="bg-white shadow-sm rounded-lg border overflow-hidden mb-6">
+          <div className="grid md:grid-cols-2 gap-6 p-6">
+            <div>
+              <h3 className="font-semibold text-lg mb-4">Order Information</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between border-b pb-2">
+                  <span className="text-gray-500">Order ID:</span>
+                  <span className="font-medium">{order.order_id}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="text-gray-500">Date:</span>
+                  <span>{formatDate(order.order_date)}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="text-gray-500">HSN Code:</span>
+                  <span>{order.hsn_code}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="text-gray-500">E-Way Bill:</span>
+                  <span>{order.eway_bill || "N/A"}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="text-gray-500">Vehicle No:</span>
+                  <span>{order.vehicle_no || "N/A"}</span>
+                </div>
+                <div className="flex justify-between pb-2">
+                  <span className="text-gray-500">Reverse Charge:</span>
+                  <span>{order.is_reverse_charge ? "Yes" : "No"}</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div>
-            <h3 className="font-semibold text-lg mb-4">Client Information</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between border-b pb-2">
-                <span className="text-gray-500">Name:</span>
-                <span className="font-medium">{order.client_name}</span>
-              </div>
-              <div className="flex justify-between border-b pb-2">
-                <span className="text-gray-500">Phone:</span>
-                <span>{order.client_phone}</span>
-              </div>
-              <div className="flex justify-between border-b pb-2">
-                <span className="text-gray-500">Address:</span>
-                <span className="text-right">{order.client_address}</span>
-              </div>
-              <div className="flex justify-between border-b pb-2">
-                <span className="text-gray-500">GST Number:</span>
-                <span>{order.client_gst || "N/A"}</span>
-              </div>
-              <div className="flex justify-between pb-2">
-                <span className="text-gray-500">State Code:</span>
-                <span>{order.state_code}</span>
+            <div>
+              <h3 className="font-semibold text-lg mb-4">Client Information</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between border-b pb-2">
+                  <span className="text-gray-500">Name:</span>
+                  <span className="font-medium">{order.client_name}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="text-gray-500">Phone:</span>
+                  <span>{order.client_phone}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="text-gray-500">Address:</span>
+                  <span className="text-right">{order.client_address}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="text-gray-500">GST Number:</span>
+                  <span>{order.client_gst || "N/A"}</span>
+                </div>
+                <div className="flex justify-between pb-2">
+                  <span className="text-gray-500">State Code:</span>
+                  <span>{order.state_code}</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="bg-white shadow-sm rounded-lg border overflow-hidden">
-        <h3 className="font-semibold text-lg p-6 pb-4">Order Items</h3>
-        
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="text-xs uppercase bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3">Product</th>
-                <th scope="col" className="px-6 py-3">HSN Code</th>
-                <th scope="col" className="px-6 py-3">Size (mm)</th>
-                <th scope="col" className="px-6 py-3">Boxes</th>
-                <th scope="col" className="px-6 py-3">Sqft/Box</th>
-                <th scope="col" className="px-6 py-3">Total Sqft</th>
-                <th scope="col" className="px-6 py-3">Price/Sqft</th>
-                <th scope="col" className="px-6 py-3 text-right">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {enhancedItems.map((item, index) => (
-                <tr key={index} className="border-b">
-                  <td className="px-6 py-4 font-medium">{item.brand || `Product ${item.product_id}`}</td>
-                  <td className="px-6 py-4">{inventoryMap[item.product_id]?.hsn_code || ""}</td>
-                  <td className="px-6 py-4">{item.size || "N/A"}</td>
-                  <td className="px-6 py-4">{item.boxes_sold}</td>
-                  <td className="px-6 py-4">{item.sqftPerBox?.toFixed(2) || "N/A"}</td>
-                  <td className="px-6 py-4">{item.totalSqft?.toFixed(2) || "N/A"}</td>
-                  <td className="px-6 py-4">₹{item.price_per_sqft}</td>
-                  <td className="px-6 py-4 text-right">{formatCurrency(item.totalPrice || 0)}</td>
+        <div className="bg-white shadow-sm rounded-lg border overflow-hidden">
+          <h3 className="font-semibold text-lg p-6 pb-4">Order Items</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left order-items-table">
+              <thead className="text-xs uppercase bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3">Product</th>
+                  <th scope="col" className="px-6 py-3">HSN Code</th>
+                  <th scope="col" className="px-6 py-3">Size (mm)</th>
+                  <th scope="col" className="px-6 py-3">Boxes</th>
+                  <th scope="col" className="px-6 py-3">Sqft/Box</th>
+                  <th scope="col" className="px-6 py-3">Total Sqft</th>
+                  <th scope="col" className="px-6 py-3">Price/Sqft</th>
+                  <th scope="col" className="px-6 py-3 text-right">Amount</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        
-        <div className="p-6 border-t">
-          <div className="ml-auto md:w-1/2 lg:w-1/3 space-y-3">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Subtotal:</span>
-              <span>{formatCurrency(subtotal)}</span>
-            </div>
-            {order.order_type !== 'quotation' ? (
-              <>
-                <div className={cn("flex justify-between", taxes.cgst === 0 && taxes.sgst === 0 && "hidden")}> 
-                  <span className="text-gray-600">CGST (9%):</span>
-                  <span>{formatCurrency(taxes.cgst)}</span>
-                </div>
-                <div className={cn("flex justify-between", taxes.cgst === 0 && taxes.sgst === 0 && "hidden")}> 
-                  <span className="text-gray-600">SGST (9%):</span>
-                  <span>{formatCurrency(taxes.sgst)}</span>
-                </div>
-                <div className={cn("flex justify-between", taxes.igst === 0 && "hidden")}> 
-                  <span className="text-gray-600">IGST (18%):</span>
-                  <span>{formatCurrency(taxes.igst)}</span>
-                </div>
-                <div className={cn("flex justify-between", order.is_reverse_charge && "hidden")}> 
-                  <span className="text-gray-600">Total Tax:</span>
-                  <span>{formatCurrency(taxes.totalTax)}</span>
-                </div>
-                <div className={cn("flex justify-between", !order.is_reverse_charge && "hidden")}> 
-                  <span className="text-gray-600 italic">Reverse Charge Applicable</span>
-                </div>
-                <div className="flex justify-between pt-3 border-t font-semibold">
-                  <span>Total Amount:</span>
-                  <span>{formatCurrency(grandTotal)}</span>
-                </div>
-              </>
-            ) : (
-              <div className="flex justify-between pt-3 border-t font-semibold">
-                <span>Total Amount:</span>
+              </thead>
+              <tbody>
+                {enhancedItems.map((item, index) => (
+                  <tr key={index} className="border-b">
+                    <td className="px-6 py-4 font-medium">{item.brand || `Product ${item.product_id}`}</td>
+                    <td className="px-6 py-4">{inventoryMap[item.product_id]?.hsn_code || ""}</td>
+                    <td className="px-6 py-4">{item.size || "N/A"}</td>
+                    <td className="px-6 py-4">{item.boxes_sold}</td>
+                    <td className="px-6 py-4">{item.sqftPerBox?.toFixed(2) || "N/A"}</td>
+                    <td className="px-6 py-4">{item.totalSqft?.toFixed(2) || "N/A"}</td>
+                    <td className="px-6 py-4">₹{item.price_per_sqft}</td>
+                    <td className="px-6 py-4 text-right amount-cell">{formatCurrency(item.totalPrice || 0)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="p-6 border-t">
+            <div className="ml-auto md:w-1/2 lg:w-1/3 space-y-3">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Subtotal:</span>
                 <span>{formatCurrency(subtotal)}</span>
               </div>
-            )}
-            <div className="flex justify-between">
-              <span className="text-gray-600">Total Boxes:</span>
-              <span>{totalBoxes}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Total Area:</span>
-              <span>{totalSqft.toFixed(2)} sq.ft.</span>
+              {order.order_type !== 'quotation' ? (
+                <>
+                  <div className={cn("flex justify-between", taxes.cgst === 0 && taxes.sgst === 0 && "hidden")}> 
+                    <span className="text-gray-600">CGST (9%):</span>
+                    <span>{formatCurrency(taxes.cgst)}</span>
+                  </div>
+                  <div className={cn("flex justify-between", taxes.cgst === 0 && taxes.sgst === 0 && "hidden")}> 
+                    <span className="text-gray-600">SGST (9%):</span>
+                    <span>{formatCurrency(taxes.sgst)}</span>
+                  </div>
+                  <div className={cn("flex justify-between", taxes.igst === 0 && "hidden")}> 
+                    <span className="text-gray-600">IGST (18%):</span>
+                    <span>{formatCurrency(taxes.igst)}</span>
+                  </div>
+                  <div className={cn("flex justify-between", order.is_reverse_charge && "hidden")}> 
+                    <span className="text-gray-600">Total Tax:</span>
+                    <span>{formatCurrency(taxes.totalTax)}</span>
+                  </div>
+                  <div className={cn("flex justify-between", !order.is_reverse_charge && "hidden")}> 
+                    <span className="text-gray-600 italic">Reverse Charge Applicable</span>
+                  </div>
+                  <div className="flex justify-between pt-3 border-t font-semibold">
+                    <span>Total Amount:</span>
+                    <span>{formatCurrency(grandTotal)}</span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex justify-between pt-3 border-t font-semibold">
+                  <span>Total Amount:</span>
+                  <span>{formatCurrency(subtotal)}</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-gray-600">Total Boxes:</span>
+                <span>{totalBoxes}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Total Area:</span>
+                <span>{totalSqft.toFixed(2)} sq.ft.</span>
+              </div>
             </div>
           </div>
         </div>
