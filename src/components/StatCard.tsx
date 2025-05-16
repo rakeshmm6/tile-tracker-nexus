@@ -50,9 +50,9 @@ export default function StatCard({
           <p className="text-gray-500 text-sm">{title}</p>
           <div className="min-w-0">
             <h3
-              className="text-2xl sm:text-2xl md:text-3xl font-bold mt-1 truncate"
+              className="text-2xl sm:text-2xl md:text-3xl font-bold mt-1 truncate max-w-full sm:max-w-xs md:max-w-md lg:max-w-2xl xl:max-w-4xl"
               title={String(value)}
-              style={{ maxWidth: '16rem', lineHeight: 1.2 }}
+              style={{ lineHeight: 1.2 }}
             >
               {value}
             </h3>
