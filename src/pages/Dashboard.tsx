@@ -90,21 +90,37 @@ const Dashboard = () => {
         />
       </div>
 
-      <div className="mt-6 bg-white p-4 sm:p-6 rounded-lg border shadow-sm w-full">
-        <h2 className="text-lg font-medium mb-4">Recent Activity</h2>
-        <div className="space-y-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="flex items-start gap-4 p-3 rounded-md hover:bg-gray-50">
-              <div className="bg-primary/10 rounded-full p-2">
-                <div className="w-2 h-2 rounded-full bg-primary" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+        <div className="bg-white p-4 sm:p-6 rounded-lg border shadow-sm w-full">
+          <h2 className="text-lg font-medium mb-4">Recent Activity</h2>
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-start gap-4 p-3 rounded-md hover:bg-gray-50">
+                <div className="bg-primary/10 rounded-full p-2">
+                  <div className="w-2 h-2 rounded-full bg-primary" />
+                </div>
+                <div>
+                  <p className="font-medium">New order received</p>
+                  <p className="text-sm text-gray-500">Order #{2023000 + i} has been placed by Client {i}</p>
+                </div>
+                <div className="text-xs text-gray-500 ml-auto">{i} hour{i > 1 ? 's' : ''} ago</div>
               </div>
-              <div>
-                <p className="font-medium">New order received</p>
-                <p className="text-sm text-gray-500">Order #{2023000 + i} has been placed by Client {i}</p>
-              </div>
-              <div className="text-xs text-gray-500 ml-auto">{i} hour{i > 1 ? 's' : ''} ago</div>
-            </div>
-          ))}
+            ))}
+          </div>
+        </div>
+        <div className="bg-white p-4 sm:p-6 rounded-lg border shadow-sm w-full flex flex-col">
+          <h2 className="text-lg font-medium mb-4">Monthly Revenue</h2>
+          <div className="flex-1 min-h-[220px]">
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={monthlyRevenue}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis tickFormatter={(v) => `₹${v / 1000}K`} />
+                <Tooltip formatter={(v) => [formatCurrency(Number(v)), 'Revenue']} />
+                <Bar dataKey="revenue" fill="#8B5CF6" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
     </Layout>
