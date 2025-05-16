@@ -48,9 +48,9 @@ export default function StatCard({
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <p className="text-gray-500 text-sm">{title}</p>
-          <div className="min-w-0">
+          <div className="w-full min-w-0">
             <h3
-              className="text-2xl sm:text-2xl md:text-3xl font-bold mt-1 truncate max-w-full sm:max-w-xs md:max-w-md lg:max-w-2xl xl:max-w-4xl"
+              className="text-2xl sm:text-2xl md:text-3xl font-bold mt-1 whitespace-normal break-words max-w-full"
               title={String(value)}
               style={{ lineHeight: 1.2 }}
             >

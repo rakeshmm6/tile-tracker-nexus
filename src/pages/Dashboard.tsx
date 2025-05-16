@@ -55,7 +55,7 @@ const Dashboard = () => {
         description="Overview of your business performance"
       />
 
-      <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 gap-y-6 mb-8">
+      <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-y-6 mb-8">
         <StatCard
           title="Total Inventory Value"
           value={formatCurrency(stats.inventory_value)}
