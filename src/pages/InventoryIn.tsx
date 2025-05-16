@@ -7,6 +7,7 @@ import { useInventory } from "@/hooks/useInventory";
 import { addInventoryInEntry, getInventoryInHistory, addInventoryItem, updateInventoryItem } from "@/lib/database/inventory";
 import { InventoryItem } from "@/lib/types";
 import Layout from "@/components/Layout";
+import { useAuth } from "@/contexts/AuthContext";
 
 const emptyNewProduct = {
   brand: "",
@@ -25,6 +26,7 @@ const emptyNewProduct = {
 
 const InventoryIn: React.FC = () => {
   const { inventory, refresh: refreshInventory } = useInventory();
+  const { isAdmin } = useAuth();
   const [truckNumber, setTruckNumber] = useState("");
   const [date, setDate] = useState("");
   const [products, setProducts] = useState([
@@ -124,6 +126,20 @@ const InventoryIn: React.FC = () => {
       refreshInventory && refreshInventory();
     } catch (err: any) {
       setError("Failed to add entry");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteHistory = async (id: number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { deleteInventoryInEntry } = await import("@/lib/database/inventory");
+      await deleteInventoryInEntry(id);
+      await fetchHistory();
+    } catch (err: any) {
+      setError("Failed to delete entry");
     } finally {
       setLoading(false);
     }
@@ -262,6 +278,16 @@ const InventoryIn: React.FC = () => {
                           })}
                         </ul>
                       </div>
+                      {isAdmin() && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="mt-2"
+                          onClick={() => handleDeleteHistory(entry.id)}
+                        >
+                          Delete
+                        </Button>
+                      )}
                     </div>
                   ))
                 )}

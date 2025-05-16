@@ -75,8 +75,8 @@ export default function Layout({ children }: LayoutProps) {
       <nav
         className={
           cn(
-            "fixed top-0 right-0 h-full w-64 bg-white border-l shadow-sm z-50 transition-transform duration-200 lg:static lg:translate-x-0 lg:flex lg:flex-col",
-            sidebarOpen ? "translate-x-0" : "translate-x-full",
+            "fixed top-0 left-0 h-full w-64 bg-white border-r shadow-sm z-50 transition-transform duration-200 lg:static lg:translate-x-0 lg:flex lg:flex-col",
+            sidebarOpen ? "translate-x-0" : "-translate-x-full",
             "lg:translate-x-0"
           )
         }
@@ -132,7 +132,7 @@ export default function Layout({ children }: LayoutProps) {
       )}
 
       {/* Main Content */}
-      <div className="flex-1 w-full lg:pl-64">
+      <div className="flex-1 w-full lg:pr-64">
         <main className="px-2 sm:px-4 lg:px-8 transition-all duration-200">
           {children}
         </main>

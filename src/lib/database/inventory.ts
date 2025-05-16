@@ -128,3 +128,12 @@ export const getInventoryInHistory = async () => {
   if (error) throw error;
   return data;
 };
+
+// Delete an inventory in entry (truck entry) by ID
+export const deleteInventoryInEntry = async (id: number) => {
+  const { error } = await supabase
+    .from("inventory_in")
+    .delete()
+    .eq("id", id);
+  if (error) throw error;
+};
